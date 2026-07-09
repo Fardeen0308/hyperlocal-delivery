@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Product Details</title>
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+<header>
+    <h1>Product Details</h1>
+</header>
+
+<div id="productDetails"></div>
+
+<h2>🛍️ People Also Bought</h2>
+
+<div id="relatedProducts" class="products"></div>
+
+<script src="product.js"></script>
+
+<h2>⭐ Write a Review</h2>
+
+<select id="rating">
+    <option value="5">⭐⭐⭐⭐⭐</option>
+    <option value="4">⭐⭐⭐⭐</option>
+    <option value="3">⭐⭐⭐</option>
+    <option value="2">⭐⭐</option>
+    <option value="1">⭐</option>
+</select>
+
+<br><br>
+
+<textarea
+id="comment"
+placeholder="Write your review..."
+rows="4"
+cols="35">
+</textarea>
+
+<br><br>
+
+<button onclick="addReview()">
+Submit Review
+</button>
+
+<h2>Customer Reviews</h2>
+
+<div id="reviews"></div>
+
+</body>
+</html>

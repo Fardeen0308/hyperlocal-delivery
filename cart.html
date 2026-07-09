@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cart</title>
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+<header>
+    <h1>My Cart</h1>
+</header>
+
+<div id="cartItems"></div>
+
+<h2 id="subtotal"></h2>
+
+<h3 id="delivery"></h3>
+
+<h3 id="gst"></h3>
+
+<h2 id="grandTotal"></h2>
+
+<a href="checkout.html">
+    <button>Proceed To Checkout</button>
+</a>
+
+<a href="checkout.html">
+    
+</a>
+
+<h2 id="total">Total: ₹0</h2>
+<a href="checkout.html"></a>
+
+<input
+    type="text"
+    id="coupon"
+    placeholder="Enter Coupon Code">
+
+<button onclick="applyCoupon()">
+    Apply Coupon
+</button>
+
+<h3 id="discount">
+Discount: ₹0
+</h3>
+    <button>Proceed To Checkout</button>
+</a>
+<script>
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+let cartItems = document.getElementById("cartItems");
+let total = 0;
+
+cart.forEach((item, index) => {
+    total += Number(item.price) * (item.quantity || 1);
+    cartItems.innerHTML += `
+<div class="card">
+    <img src="${item.image}" width="120">
+    <h3>${item.name}</h3>
+    <p>₹${item.price}</p>
+
+    <button onclick="decreaseQty(${index})">-</button>
+    <span>${item.quantity || 1}</span>
+    <button onclick="increaseQty(${index})">+</button>
+
+    <button onclick="removeItem(${index})">Remove</button>
+</div>
+`;
+});
+
+document.getElementById("total").innerText =
+   "Total: ₹" + total;
+
+   let delivery = 40;
+
+let gst = total * 0.05;
+
+let grandTotal = total + delivery + gst;
+
+document.getElementById("subtotal").innerHTML =
+"Subtotal : ₹" + total;
+
+document.getElementById("delivery").innerHTML =
+"Delivery : ₹" + delivery;
+
+document.getElementById("gst").innerHTML =
+"GST : ₹" + gst.toFixed(2);
+
+document.getElementById("grandTotal").innerHTML =
+"Grand Total : ₹" + grandTotal.toFixed(2);
+    
+
+function removeItem(index) {
+    cart.splice(index, 1);
+
+    localStorage.setItem(
+        "cart",
+        JSON.stringify(cart)
+    );
+
+    location.reload();
+}
+function increaseQty(index) {
+    if (!cart[index].quantity) {
+        cart[index].quantity = 1;
+    }
+
+    cart[index].quantity++;
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    location.reload();
+}
+
+function decreaseQty(index) {
+    if (!cart[index].quantity) {
+        cart[index].quantity = 1;
+    }
+
+    if (cart[index].quantity > 1) {
+        cart[index].quantity--;
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    location.reload();
+}
+
+let discount = 0;
+
+function applyCoupon() {
+
+    let code =
+    document.getElementById("coupon")
+    .value
+    .toUpperCase();
+
+    if(code === "WELCOME50"){
+        discount = 50;
+    }
+    else if(code === "SAVE100"){
+        discount = 100;
+    }
+    else{
+        alert("Invalid Coupon");
+        return;
+    }
+
+    document.getElementById("discount").innerText =
+    "Discount: ₹" + discount;
+
+    let delivery = 40;
+    let gst = total * 0.05;
+
+    let grandTotal =
+    total + delivery + gst - discount;
+
+    document.getElementById("grandTotal").innerText =
+    "Grand Total: ₹" + grandTotal.toFixed(2);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+<h2>💬 Chat</h2>
+
+<div id="messages" style="height:400px;overflow-y:auto;border:1px solid #ccc;padding:10px;"></div>
+
+<input id="message" placeholder="Type message">
+
+<button onclick="sendMessage()">Send</button>
+
+<script>
+
+const user = JSON.parse(localStorage.getItem("user"));
+const chatWith = localStorage.getItem("chatWith");
+
+async function loadMessages(){
+
+    const response = await fetch(
+        `http://localhost:5000/chat/${user.email}/${chatWith}`
+    );
+
+    const chats = await response.json();
+
+    let html = "";
+
+    chats.forEach(chat=>{
+
+        if(chat.sender===user.email){
+
+            html += `
+            <div style="text-align:right;margin:10px;">
+                <div style="
+                    display:inline-block;
+                    background:#4CAF50;
+                    color:white;
+                    padding:10px;
+                    border-radius:15px;
+                    max-width:70%;">
+                    ${chat.message}
+                    <br>
+                    <small>${new Date(chat.time).toLocaleTimeString()}</small>
+                </div>
+            </div>
+            `;
+
+        }else{
+
+            html += `
+            <div style="text-align:left;margin:10px;">
+                <div style="
+                    display:inline-block;
+                    background:#eeeeee;
+                    color:black;
+                    padding:10px;
+                    border-radius:15px;
+                    max-width:70%;">
+                    ${chat.message}
+                    <br>
+                    <small>${new Date(chat.time).toLocaleTimeString()}</small>
+                </div>
+            </div>
+            `;
+
+        }
+
+    });
+
+    const box = document.getElementById("messages");
+
+    box.innerHTML = html;
+
+    box.scrollTop = box.scrollHeight;
+
+}
+
+async function sendMessage(){
+
+    const msg=document.getElementById("message").value;
+
+    if(msg==="") return;
+
+    await fetch("http://localhost:5000/chat",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            sender:user.email,
+
+            receiver:chatWith,
+
+            message:msg
+
+        })
+
+    });
+
+    document.getElementById("message").value="";
+
+    loadMessages();
+
+}
+
+loadMessages();
+
+setInterval(loadMessages,1000);
+
+document.getElementById("message").addEventListener("keypress", function(e){
+
+    if(e.key==="Enter"){
+
+        sendMessage();
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>

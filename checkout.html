@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Checkout</title>
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+<header>
+    <h1>Checkout</h1>
+</header>
+
+<div class="form-box">
+
+    <input type="text" id="customerName"
+           placeholder="Full Name">
+
+    <input type="text" id="address"
+           placeholder="Delivery Address">
+
+    <input type="tel" id="phone"
+           placeholder="Phone Number">
+
+           <h3>Select Payment Method</h3>
+
+           <input type="radio" name="payment" value="Cash on Delivery" checked>
+Cash on Delivery<br><br>
+
+<input type="radio" name="payment" value="UPI">
+UPI<br><br>
+
+<input type="radio" name="payment" value="Card">
+Credit/Debit Card<br><br>
+
+
+    <button onclick="placeOrder()">
+        Place Order
+    </button>
+
+
+
+</div>
+
+<script>
+async function placeOrder() {
+
+    let customerName =
+    document.getElementById("customerName").value;
+
+    let address =
+    document.getElementById("address").value;
+
+    let phone =
+    document.getElementById("phone").value;
+
+    let products =
+    JSON.parse(localStorage.getItem("cart")) || [];
+console.log(products);
+    const user =
+JSON.parse(localStorage.getItem("user"));
+
+    let total = 0;
+
+    products.forEach(product => {
+        total += Number(product.price);
+    });
+
+
+    const payment =
+document.querySelector(
+'input[name="payment"]:checked'
+).value;
+
+    const response = await fetch(
+        "http://localhost:5000/orders",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                customerName,
+                phone,
+                address,
+                email: user.email,
+                products,
+                total,
+                payment
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+
+    localStorage.removeItem("cart");
+
+    window.location.href = "orders.html";
+}
+</script>
+
+</body>
+</html>

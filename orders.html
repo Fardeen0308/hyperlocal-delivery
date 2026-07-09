@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Orders</title>
+    <link rel="stylesheet" href="f.css">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <link rel="stylesheet"
+href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"/>
+
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+
+<header>
+    <h1>My Orders</h1>
+</header>
+
+<div id="orders"></div>
+
+<h2>🗺️ Live Delivery Tracking</h2>
+
+<h3 id="eta">⏳ Calculating ETA...</h3>
+
+<h3 id="distance">📍 Distance: --</h3>
+
+<div id="map" style="
+height:400px;
+width:100%;
+margin-top:20px;
+border-radius:15px;">
+</div>
+
+<script>
+
+async function loadOrders() {
+
+    const user =
+    JSON.parse(localStorage.getItem("user"));
+
+    const response = await fetch(
+        "http://localhost:5000/myorders/" + user.email
+    );
+
+    const orders = await response.json();
+
+    let container =
+    document.getElementById("orders");
+
+   
+    container.innerHTML = "";
+
+    orders.forEach(order => {
+
+         let confirmed = "📦 Order Confirmed";
+let preparing = "👨‍🍳 Preparing";
+let delivery = "🛵 Out for Delivery";
+let delivered = "🏠 Delivered";
+
+if (order.status == "Pending") {
+    confirmed = "✅ 📦 Order Confirmed";
+}
+
+if (order.status == "Preparing") {
+    confirmed = "✅ 📦 Order Confirmed";
+    preparing = "✅ 👨‍🍳 Preparing";
+}
+
+if (order.status == "Out for Delivery") {
+    confirmed = "✅ 📦 Order Confirmed";
+    preparing = "✅ 👨‍🍳 Preparing";
+    delivery = "✅ 🛵 Out for Delivery";
+}
+
+if (order.status == "Delivered") {
+    confirmed = "✅ 📦 Order Confirmed";
+    preparing = "✅ 👨‍🍳 Preparing";
+    delivery = "✅ 🛵 Out for Delivery";
+    delivered = "✅ 🏠 Delivered";
+}
+
+let confirmedClass = "";
+let preparingClass = "";
+let deliveryClass = "";
+let deliveredClass = "";
+
+if(order.status=="Pending"){
+    confirmedClass="done";
+}
+
+if(order.status=="Preparing"){
+    confirmedClass="done";
+    preparingClass="done";
+}
+
+if(order.status=="Out for Delivery"){
+    confirmedClass="done";
+    preparingClass="done";
+    deliveryClass="done";
+}
+
+if(order.status=="Delivered"){
+    confirmedClass="done";
+    preparingClass="done";
+    deliveryClass="done";
+    deliveredClass="done";
+}
+
+
+        container.innerHTML += `
+        <div class="card">
+
+            <h3>${order.customerName}</h3>
+
+            <p><b>Phone:</b> ${order.phone}</p>
+
+            <p><b>Address:</b> ${order.address}</p>
+
+            <p><b>Total:</b> ₹${order.total}</p>
+
+            <p><b>Payment:</b> ${order.payment}</p>
+
+            <p><b>Status:</b> ${order.status}</p>
+
+           ${order.deliveryBoy ? `
+<h3>🚚 Delivery Partner</h3>
+
+<p>👤 ${order.deliveryBoy.name}</p>
+
+<p>📞 ${order.deliveryBoy.phone}</p>
+
+<p>🚲 ${order.deliveryBoy.vehicle}</p>
+
+<p>⭐ ${order.deliveryBoy.rating}</p>
+
+<a href="tel:${order.deliveryBoy.phone}">
+<button>📞 Call Delivery Partner</button>
+</a>
+
+<button onclick="openChat('${order.deliveryBoy.email}')">
+💬 Chat
+</button>
+
+
+` : ""}
+            ${order.status != "Delivered" ? `
+<button onclick="cancelOrder('${order._id}')">
+❌ Cancel Order
+</button>
+` : `
+
+<h3>⭐ Rate Delivery Partner</h3>
+
+<select id="rating-${order._id}">
+<option value="5">⭐⭐⭐⭐⭐</option>
+<option value="4">⭐⭐⭐⭐</option>
+<option value="3">⭐⭐⭐</option>
+<option value="2">⭐⭐</option>
+<option value="1">⭐</option>
+</select>
+
+<button onclick="rateDeliveryBoy('${order._id}')">
+Submit Rating
+</button>
+
+
+
+`}
+
+            
+
+
+<div class="timeline">
+
+<p class="${confirmedClass}">${confirmed}</p>
+<p class="${preparingClass}">${preparing}</p>
+<p class="${deliveryClass}">${delivery}</p>
+<p class="${deliveredClass}">${delivered}</p>
+
+</div>
+        `;
+
+    });
+
+}
+
+loadOrders();
+
+async function cancelOrder(id){
+
+    let ok = confirm("Cancel this order?");
+
+    if(!ok) return;
+
+    const response = await fetch(
+        "http://localhost:5000/orders/" + id,
+        {
+            method:"DELETE"
+        }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+
+    loadOrders();
+
+}
+
+
+let map;
+let deliveryMarker;
+
+let routingControl;
+
+function loadMap(){
+
+    map = L.map("map").setView([customerLat,customerLng],13);
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            maxZoom:19
+        }
+    ).addTo(map);
+
+    // Customer
+    L.marker([customerLat,customerLng])
+        .addTo(map)
+        .bindPopup("🏠 Customer");
+
+    // Delivery Partner
+    deliveryMarker = L.marker([17.3950,78.4967])
+        .addTo(map)
+        .bindPopup("🛵 Delivery Partner");
+
+    setInterval(trackDeliveryBoy,5000);
+
+trackDeliveryBoy();
+
+}
+
+let customerLat;
+let customerLng;
+
+function getCustomerLocation(){
+
+    if(navigator.geolocation){
+
+        navigator.geolocation.watchPosition((position)=>{
+
+            customerLat = position.coords.latitude;
+            customerLng = position.coords.longitude;
+
+            loadMap();
+
+        });
+
+    }
+
+}
+
+getCustomerLocation();
+
+async function trackDeliveryBoy(){
+
+    const user =
+JSON.parse(localStorage.getItem("user"));
+
+const response = await fetch(
+"http://localhost:5000/myorders/" + user.email
+);
+
+const orders = await response.json();
+
+const latestOrder = orders[orders.length - 1];
+
+const deliveryEmail = latestOrder.deliveryBoy.email;
+
+
+
+const locationResponse = await fetch(
+    "http://localhost:5000/location/" + deliveryEmail
+);
+
+const location = await locationResponse.json();
+
+
+   
+
+    if(location.lat && location.lng){
+
+        if(routingControl){
+
+    map.removeControl(routingControl);
+
+}
+
+routingControl = L.Routing.control({
+
+    waypoints: [
+
+        L.latLng(location.lat, location.lng),
+
+        L.latLng(customerLat,customerLng)
+
+    ],
+
+    routeWhileDragging:false,
+
+    draggableWaypoints:false,
+
+    addWaypoints:false
+
+}).addTo(map);
+
+deliveryMarker.setLatLng([
+    location.lat,
+    location.lng
+]);
+
+const distance =
+map.distance(
+    [location.lat, location.lng],
+    [customerLat, customerLng]
+);
+
+document.getElementById("distance").innerHTML =
+"📍 Distance: " +
+(distance/1000).toFixed(2) +
+" km";
+
+const eta =
+(distance/1000/30)*60;
+
+document.getElementById("eta").innerHTML =
+"⏳ ETA: " +
+Math.ceil(eta) +
+" mins";
+
+    }
+
+}
+
+async function rateDeliveryBoy(id){
+
+const rating =
+document.getElementById("rating-"+id).value;
+
+alert("Thanks for rating ⭐ " + rating);
+
+// Tomorrow we'll save this in MongoDB.
+
+}
+
+function openChat(email){
+
+    localStorage.setItem("chatWith", email);
+
+    window.location.href = "chat.html";
+
+}
+
+
+
+</script>
+
+<div class="bottom-nav">
+
+    <a href="f.html">🏠<br>Home</a>
+
+    <a href="wishlist.html">❤️<br>Wishlist</a>
+
+    <a href="orders.html">📦<br>Orders</a>
+
+    <a href="profile.html">👤<br>Profile</a>
+
+</div>
+</body>
+</html>

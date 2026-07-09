@@ -1,0 +1,442 @@
+ <!DOCTYPE html>
+<html>
+<head>
+    <title>HyperLocal Delivery</title>
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+<header>
+    <h1>HyperLocal Delivery</h1>
+
+  
+    
+    <div class="hero">
+
+    <h2>👋 Welcome to HyperLocal Delivery</h2>
+
+    <p>Get groceries, electronics, fashion and more delivered in minutes.</p>
+
+</div>
+    
+
+    <a href="cart.html">
+        <button id="cartButton">
+            🛒Cart (0)
+        </button>
+    </a>
+
+<a href="profile.html">
+    <button>👨‍💼Profile</button>
+</a>
+
+<a href="wishlist.html">
+    <button>❤️ Wishlist</button>
+</a>
+
+<div class="slider">
+
+    <img id="banner"
+    src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200">
+
+</div>
+
+    <div class="categories">
+
+    <button onclick="filterCategory('All')">All</button>
+
+    <button onclick="filterCategory('Vegetables')">Vegetables</button>
+
+    <button onclick="filterCategory('Fruits')">Fruits</button>
+
+    <button onclick="filterCategory('Dairy')">Dairy</button>
+
+    <button onclick="filterCategory('Bakery')">Bakery</button>
+
+    <button onclick="filterCategory('Beverages')">Beverages</button>
+
+    <button onclick="filterCategory('Snacks')">Snacks</button>
+
+    <button onclick="filterCategory('Medicines')">Medicines</button>
+
+    <button onclick="filterCategory('Electronics')">Electronics</button>
+
+    <button onclick="filterCategory('Fashion')">Fashion</button>
+
+</div>
+</header>
+<input
+    type="text"
+    id="search"
+    placeholder="Search products..."
+    onkeyup="searchProducts()">
+
+    <div id="products" class="products"></div>
+<h2>🔥 Best Selling Products</h2>
+
+<div id="bestProducts" class="products"></div>
+
+<script>
+
+function addToCart(id, name, price, image) {
+
+    let cart =
+    JSON.parse(localStorage.getItem("cart")) || [];
+
+    cart.push({
+        _id: id,
+        name: name,
+        price: price,
+        image: image,
+        quantity: 1
+    });
+
+    localStorage.setItem(
+        "cart",
+        JSON.stringify(cart)
+    );
+
+    alert("Added To Cart");
+}
+
+function addToWishlist(name, price, image) {
+
+    let wishlist =
+    JSON.parse(localStorage.getItem("wishlist")) || [];
+
+    wishlist.push({
+        name,
+        price,
+        image
+    });
+
+    localStorage.setItem(
+        "wishlist",
+        JSON.stringify(wishlist)
+    );
+
+    alert("Added To Wishlist ❤️");
+
+}
+
+function openProduct(id, name, price, image, category){
+
+    localStorage.setItem(
+        "selectedProduct",
+        JSON.stringify({
+            _id: id,
+            name,
+            price,
+            image,
+            category
+        })
+    );
+
+    window.location.href = "product.html";
+
+}
+let allProducts = [];
+async function loadProducts() {
+
+    const response = await fetch(
+        "http://localhost:5000/products"
+    );
+
+     allProducts =
+    await response.json();
+
+    let container =
+    document.getElementById("products");
+
+    container.innerHTML = "";
+
+    allProducts.forEach(product => {
+
+        container.innerHTML += `
+      
+        <div class="card"
+onclick="openProduct(
+'${product._id}',
+'${product.name}',
+'${product.price}',
+'${product.image}',
+'${product.category}'
+)">
+
+<div class="offer">
+
+${product.sold >= 10 ? "🔥 Best Seller" : "🔥 20% OFF"}
+
+</div>
+            <img
+            src="${product.image}"
+            width="200"
+            height="200">
+
+            <h2>${product.name}</h2>
+             
+            <p>${product.category}</p>
+
+
+            <p>₹${product.price}</p>
+
+            <p>Stock: ${product.stock}</p>
+
+            <div class="rating">
+⭐ ${
+product.reviews && product.reviews.length
+?
+(
+product.reviews.reduce((sum, review) => sum + Number(review.rating), 0)
+/product.reviews.length
+).toFixed(1)
+:
+"0.0"
+}
+(${product.reviews ? product.reviews.length : 0})
+</div>
+
+
+            <button onclick="event.stopPropagation(); addToCart(
+            
+            '${product._id}',
+'${product.name}',
+'${product.price}',
+'${product.image}',
+
+)">
+🛒 Add To Cart
+</button>
+
+<button onclick="event.stopPropagation(); buyNow(
+'${product.name}',
+'${product.price}',
+'${product.image}'
+)">
+⚡ Buy Now
+</button>
+
+<button onclick="event.stopPropagation(); addToWishlist(
+'${product.name}',
+'${product.price}',
+'${product.image}'
+)">
+❤️ Wishlist
+</button>
+
+            
+
+
+
+        </div>
+        `;
+    });
+}
+
+function filterCategory(category) {
+
+    let container =
+    document.getElementById("products");
+
+    container.innerHTML = "";
+
+    let products =
+    category === "All"
+        ? allProducts
+        : allProducts.filter(product =>
+            product.category === category);
+
+    products.forEach(product => {
+
+        container.innerHTML += `
+        <div class="card">
+
+            <img src="${product.image}"
+                 width="200"
+                 height="200">
+
+            <h2>${product.name}</h2>
+
+            <p>${product.category}</p>
+
+            <p>₹${product.price}</p>
+
+            
+
+            ${product.stock > 0
+? `
+<button onclick="event.stopPropagation(); addToCart(
+'${product._id}',
+
+'${product.name}',
+'${product.price}',
+'${product.image}'
+)">
+🛒 Add To Cart
+</button>
+`
+: `
+<button disabled>
+❌ Out of Stock
+</button>
+`
+}
+
+${product.stock > 0
+? `
+<button onclick="event.stopPropagation(); buyNow(
+'${product.name}',
+'${product.price}',
+'${product.image}'
+)">
+⚡ Buy Now
+</button>
+`
+: ""
+}
+
+
+
+<button onclick="event.stopPropagation(); addToWishlist(
+'${product.name}',
+'${product.price}',
+'${product.image}'
+)">
+❤️ Wishlist
+</button>
+
+        </div>
+        `;
+    });
+
+}
+
+
+async function loadBestProducts(){
+
+    const response = await fetch(
+        "http://localhost:5000/bestsellers"
+    );
+
+    const products = await response.json();
+
+    const container =
+    document.getElementById("bestProducts");
+
+    container.innerHTML = "";
+
+    products.forEach(product=>{
+
+        container.innerHTML += `
+        <div class="card">
+
+            <img src="${product.image}" width="180">
+
+            <h2>${product.name}</h2>
+
+            <p>🔥 Sold: ${product.sold}</p>
+
+            <p>₹${product.price}</p>
+
+        </div>
+        `;
+
+    });
+
+}
+loadBestProducts();
+loadProducts();
+function searchProducts() {
+
+    let text = document
+        .getElementById("search")
+        .value
+        .toLowerCase();
+
+    let cards = document.querySelectorAll(".card");
+
+    cards.forEach(card => {
+
+        let name = card.querySelector("h2")
+            .innerText
+            .toLowerCase();
+
+        if (name.includes(text)) {
+            card.style.display = "block";
+        } else {
+            card.style.display = "none";
+        }
+
+    });
+}
+function buyNow(name, price, image) {
+
+    localStorage.setItem(
+        "buyNowProduct",
+        JSON.stringify({
+            name,
+            price,
+            image
+        })
+    );
+
+    window.location.href = "checkout.html";
+}
+
+ const banners = [
+
+"https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200",
+
+"https://images.unsplash.com/photo-1506617420156-8e4536971650?w=1200",
+
+"https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200"
+
+];
+
+let currentBanner = 0;
+
+setInterval(()=>{
+
+currentBanner++;
+
+if(currentBanner>=banners.length){
+
+currentBanner=0;
+
+}
+
+document.getElementById("banner").src =
+banners[currentBanner];
+
+},3000);
+
+function updateCartCount(){
+
+    let cart =
+    JSON.parse(localStorage.getItem("cart")) || [];
+
+    document.getElementById("cartButton").innerText =
+    "🛒 Cart (" + cart.length + ")";
+
+}
+
+updateCartCount();
+
+
+
+</script>
+
+<div class="bottom-nav">
+
+    <a href="f.html">🏠<br>Home</a>
+
+    <a href="wishlist.html">❤️<br>Wishlist</a>
+
+    <a href="orders.html">📦<br>Orders</a>
+
+    <a href="profile.html">👤<br>Profile</a>
+
+   
+</div>
+</body>
+</html>

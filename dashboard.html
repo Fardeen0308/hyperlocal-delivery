@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shop Dashboard</title>
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+    <a href="orders-dashboard.html">
+    <button>📦 Manage Orders</button>
+</a>
+
+<a href="users.html">
+    <button>👥 Users</button>
+</a>
+
+<a href="f.html">
+    <button>🏠 Home</button>
+</a>
+<header>
+    <h1>Shop Owner Dashboard</h1>
+</header>
+
+<div class="stats">
+
+<div class="stat-card">
+<h2 id="productCount">0</h2>
+<p>Products</p>
+</div>
+
+<div class="stat-card">
+<h2 id="orderCount">0</h2>
+<p>Orders</p>
+</div>
+
+<div class="stat-card">
+<h2 id="userCount">0</h2>
+<p>Users</p>
+</div>
+
+<div class="stat-card">
+<h2 id="sales">₹0</h2>
+<p>Total Sales</p>
+</div>
+
+</div>
+<div class="form-box">
+    
+
+<input type="text"
+id="productName"
+placeholder="Product Name">
+
+<input type="number"
+id="productPrice"
+placeholder="Product Price">
+
+<input
+type="number"
+id="productStock"
+placeholder="Stock Quantity">
+
+<select id="productCategory">
+
+<option>Vegetables</option>
+<option>Fruits</option>
+<option>Dairy</option>
+<option>Bakery</option>
+<option>Beverages</option>
+<option>Snacks</option>
+<option>Medicines</option>
+<option>Electronics</option>
+<option>Fashion</option>
+
+</select>
+
+<input type="file" id="productImage">
+
+<img id="preview" width="150">
+
+<button onclick="uploadImage()">
+Upload Image
+</button>
+
+<button onclick="addProduct()">
+Add Product
+</button>
+
+</div>
+
+<h2>Products</h2>
+
+<div id="products"></div>
+
+<script src="dashboard.js"></script>
+<script>
+    
+document.getElementById("productImage")
+.addEventListener("change", function(event){
+
+    let file = event.target.files[0];
+
+    if(file){
+
+        let reader = new FileReader();
+
+        reader.onload = function(e){
+
+            document.getElementById("preview")
+            .src = e.target.result;
+
+        };
+
+        reader.readAsDataURL(file);
+    }
+
+});
+</script>
+<script>
+    
+
+            
+
+   async function uploadImage() {
+
+    const fileInput =
+    document.getElementById("productImage");
+
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please choose an image");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+
+        const response = await fetch(
+            "http://localhost:5000/upload",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+        const data = await response.json();
+
+        console.log(data);
+
+        if (data.imageUrl) {
+
+            localStorage.setItem(
+                "imageUrl",
+                data.imageUrl
+            );
+
+            alert("Image uploaded successfully");
+
+        } else {
+
+            alert(
+                "Server did not return image URL"
+            );
+        }
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert("Upload Failed");
+    }
+}
+</script>
+
+</body>
+</html>

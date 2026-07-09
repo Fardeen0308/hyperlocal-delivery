@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Users</title>
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+<header>
+    <h1>👥 Registered Users</h1>
+</header>
+
+<div id="users"></div>
+
+<script>
+
+async function loadUsers(){
+
+    const response = await fetch(
+        "http://localhost:5000/users"
+    );
+
+    const users = await response.json();
+
+    let container =
+    document.getElementById("users");
+
+    container.innerHTML = "";
+
+    users.forEach(user=>{
+
+        container.innerHTML += `
+        <div class="card">
+
+            <h3>${user.name}</h3>
+
+            <p>${user.email}</p>
+
+        </div>
+        `;
+
+    });
+
+}
+
+loadUsers();
+
+</script>
+
+</body>
+</html>

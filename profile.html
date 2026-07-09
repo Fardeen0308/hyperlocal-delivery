@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Profile</title>
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+<header>
+    <h1>My Profile</h1>
+</header>
+
+<div class="card">
+
+    <h2 id="name"></h2>
+
+    <p id="email"></p>
+
+    <button onclick="logout()">
+        Logout
+    </button>
+
+</div>
+
+<script>
+
+let user =
+JSON.parse(localStorage.getItem("user"));
+
+document.getElementById("name").innerText =
+user.name;
+
+document.getElementById("email").innerText =
+user.email;
+
+function logout(){
+
+    localStorage.removeItem("user");
+
+    window.location.href="login.html";
+
+}
+
+</script>
+
+<div class="bottom-nav">
+
+    <a href="f.html">🏠<br>Home</a>
+
+    <a href="wishlist.html">❤️<br>Wishlist</a>
+
+    <a href="orders.html">📦<br>Orders</a>
+
+    <a href="profile.html">👤<br>Profile</a>
+
+</div>
+</body>
+</html>
