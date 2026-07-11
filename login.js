@@ -35,7 +35,7 @@ async function login() {
 
        if(data.user.role === "customer"){
 
-    window.location.href = "f.html";
+    window.location.href = "index.html";
 
 }
 else if(data.user.role === "delivery"){
