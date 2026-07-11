@@ -45,14 +45,7 @@ const Product = mongoose.model(
     "Product",
     productSchema
 );
-mongoose.connect(process.env.MONGODB_URI)
-.then(() => {
-    console.log("MongoDB Connected");
-})
-.catch((log) => {
-    console.error(error
-        );
-});
+console.log("Supabase Connected ✅");
 
 const orderSchema = new mongoose.Schema({
     customerName: String,
@@ -148,24 +141,36 @@ app.get("/products", async (req, res) => {
 
 // Add Product
 app.post("/products", async (req, res) => {
+    try {
 
-    const product = new Product({
-        name: req.body.name,
-        price: req.body.price,
-        image: req.body.image,
-        category: req.body.category,
-        stock: req.body.stock
-    });
+        const { data, error } = await supabase
+            .from("products")
+            .insert([
+                {
+                    name: req.body.name,
+                    price: req.body.price,
+                    image: req.body.image,
+                    category: req.body.category,
+                    stock: req.body.stock || 10,
+                    sold: 0
+                }
+            ])
+            .select();
 
-    await product.save();
+        if (error) throw error;
 
-    
+        res.json({
+            message: "Product Added Successfully",
+            product: data
+        });
 
-    res.json({
-        message: "Product Added Successfully",
-        product
-    });
+    } catch (error) {
 
+        res.status(500).json({
+            message: error.message
+        });
+
+    }
 });
 
 
