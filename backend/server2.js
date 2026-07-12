@@ -176,6 +176,20 @@ app.post("/create-order", async (req, res) => {
 
 });
 
+app.get("/bestsellers", async (req, res) => {
+    const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("sold", { ascending: false })
+        .limit(5);
+
+    if (error) {
+        return res.status(500).json(error);
+    }
+
+    res.json(data);
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
