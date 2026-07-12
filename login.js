@@ -7,7 +7,7 @@ async function login() {
     document.getElementById("password").value;
 
     const response = await fetch(
-        "http://localhost:5000/login",
+        "https://hyperlocal-backend-84rs.onrender.com/login",
         {
             method: "POST",
             headers: {

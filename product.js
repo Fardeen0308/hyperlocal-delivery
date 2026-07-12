@@ -35,7 +35,7 @@ async function addReview(){
     document.getElementById("comment").value;
 
     const response = await fetch(
-        `http://localhost:5000/products/${product._id}/review`,
+        `https://hyperlocal-backend-84rs.onrender.com/products/${product._id}/review`,
         {
             method:"POST",
             headers:{
@@ -63,7 +63,7 @@ async function loadRelatedProducts(){
     JSON.parse(localStorage.getItem("selectedProduct"));
 
     const response = await fetch(
-        "http://localhost:5000/related/" + product.category
+        "https://hyperlocal-backend-84rs.onrender.com/related/" + product.category
     );
 
     const products = await response.json();
@@ -75,7 +75,7 @@ async function loadRelatedProducts(){
 
     products.forEach(item => {
 
-        if(item._id !== product._id){
+        if(item._id !== product.id){
 
             container.innerHTML += `
             <div class="card">
@@ -103,7 +103,7 @@ async function loadReviews(){
     JSON.parse(localStorage.getItem("selectedProduct"));
 
     const response = await fetch(
-        "http://localhost:5000/products"
+        "https://hyperlocal-backend-84rs.onrender.com/products"
     );
 
     const products = await response.json();
@@ -145,13 +145,13 @@ async function loadReviews(){
     JSON.parse(localStorage.getItem("selectedProduct"));
 
     const response = await fetch(
-        "http://localhost:5000/products"
+        "https://hyperlocal-backend-84rs.onrender.com/products"
     );
 
     const products = await response.json();
 
     const currentProduct = products.find(
-        p => p._id === product._id
+        p => p._id === product.id
     );
 
     if(!currentProduct) return;

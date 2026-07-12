@@ -1,6 +1,6 @@
 async function loadOrders(){
 
-    const response = await fetch("http://localhost:5000/orders");
+    const response = await fetch("https://hyperlocal-backend-84rs.onrender.com/orders");
 
     const orders = await response.json();
 
@@ -49,7 +49,7 @@ loadOrders();
 async function deliver(id){
 
     const response = await fetch(
-        "http://localhost:5000/orders/" + id,
+        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
         {
             method:"PUT"
         }
@@ -84,7 +84,7 @@ function sendLocation(){
             JSON.parse(localStorage.getItem("user"));
 
             await fetch(
-                "http://localhost:5000/location",
+                "https://hyperlocal-backend-84rs.onrender.com/location",
                 {
                     method:"POST",
                     headers:{
@@ -111,7 +111,7 @@ sendLocation();
 async function loadStats(){
 
 const response =
-await fetch("http://localhost:5000/orders");
+await fetch("https://hyperlocal-backend-84rs.onrender.com/orders");
 
 const orders =
 await response.json();

@@ -1,7 +1,7 @@
 async function loadOrders() {
 
     const response =
-    await fetch("http://localhost:5000/orders");
+    await fetch("https://hyperlocal-backend-84rs.onrender.com/orders");
 
     const orders =
     await response.json();
@@ -70,7 +70,7 @@ loadOrders();
 async function updateStatus(id) {
 
     const response = await fetch(
-        "http://localhost:5000/orders/" + id,
+        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
         {
             method: "PUT"
         }
@@ -92,7 +92,7 @@ async function deleteOrder(id) {
     if (!confirmDelete) return;
 
     const response = await fetch(
-        "http://localhost:5000/orders/" + id,
+        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
         {
             method: "DELETE"
         }

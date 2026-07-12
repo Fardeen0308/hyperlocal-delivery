@@ -16,7 +16,7 @@ document.getElementById("productStock").value;
         return;
     }
 
-    const response = await fetch("http://localhost:5000/products", {
+    const response = await fetch("https://hyperlocal-backend-84rs.onrender.com/products", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -40,7 +40,7 @@ document.getElementById("productStock").value;
 // Load Products
 async function loadProducts() {
 
-    const res = await fetch("http://localhost:5000/products");
+    const res = await fetch("https://hyperlocal-backend-84rs.onrender.com/products");
 
     const products = await res.json();
 
@@ -61,11 +61,11 @@ async function loadProducts() {
 
             <p>₹${product.price}</p>
 
-            <button onclick="deleteProduct('${product._id}')">
+            <button onclick="deleteProduct('${product.id}')">
                 🗑️ Delete
             </button>
 
-            <button onclick="editProduct('${product._id}')">
+            <button onclick="editProduct('${product.id}')">
 ✏️ Edit
 </button>
 
@@ -84,7 +84,7 @@ async function deleteProduct(id){
     if(!ok) return;
 
     const response = await fetch(
-        `http://localhost:5000/products/${id}`,
+        `https://hyperlocal-backend-84rs.onrender.com/products/${id}`,
         {
             method:"DELETE"
         }
@@ -111,7 +111,7 @@ async function editProduct(id){
     const stock = prompt("New Stock");
 
     const response = await fetch(
-        `http://localhost:5000/products/${id}`,
+        'https://hyperlocal-backend-84rs.onrender.com/products/${id}',
         {
             method:"PUT",
             headers:{
@@ -138,7 +138,7 @@ async function loadStats(){
 
     // Products
     const productRes =
-    await fetch("http://localhost:5000/products");
+    await fetch("https://hyperlocal-backend-84rs.onrender.com/products");
 
     const products =
     await productRes.json();
@@ -148,7 +148,7 @@ async function loadStats(){
 
     // Orders
     const orderRes =
-    await fetch("http://localhost:5000/orders");
+    await fetch("https://hyperlocal-backend-84rs.onrender.com/orders");
 
     const orders =
     await orderRes.json();
@@ -168,7 +168,7 @@ async function loadStats(){
 
     // Users
     const userRes =
-    await fetch("http://localhost:5000/users");
+    await fetch("https://hyperlocal-backend-84rs.onrender.com/users");
 
     const users =
     await userRes.json();

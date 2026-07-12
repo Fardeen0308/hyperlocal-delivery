@@ -32,7 +32,7 @@ const deliveryEmail =
 localStorage.getItem("deliveryEmail");
 
 const response = await fetch(
-"http://localhost:5000/chat/"
+"https://hyperlocal-backend-84rs.onrender.com/chat/"
 + user.email + "/" + deliveryEmail
 );
 
@@ -70,7 +70,7 @@ async function sendMessage(){
 
 const user=JSON.parse(localStorage.getItem("user"));
 
-await fetch("http://localhost:5000/chat",{
+await fetch("https://hyperlocal-backend-84rs.onrender.com/chat",{
 
 method:"POST",
 

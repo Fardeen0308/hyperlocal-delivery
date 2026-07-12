@@ -22,7 +22,7 @@ const chatWith = localStorage.getItem("chatWith");
 async function loadMessages(){
 
     const response = await fetch(
-        `http://localhost:5000/chat/${user.email}/${chatWith}`
+        `https://hyperlocal-backend-84rs.onrender.com/chat/${user.email}/${chatWith}`
     );
 
     const chats = await response.json();
@@ -85,7 +85,7 @@ async function sendMessage(){
 
     if(msg==="") return;
 
-    await fetch("http://localhost:5000/chat",{
+    await fetch("https://hyperlocal-backend-84rs.onrender.com/chat",{
 
         method:"POST",
 

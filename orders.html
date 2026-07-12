@@ -42,7 +42,7 @@ async function loadOrders() {
     JSON.parse(localStorage.getItem("user"));
 
     const response = await fetch(
-        "http://localhost:5000/myorders/" + user.email
+        "https://hyperlocal-backend-84rs.onrender.com/myorders/" + user.email
     );
 
     const orders = await response.json();
@@ -196,7 +196,7 @@ async function cancelOrder(id){
     if(!ok) return;
 
     const response = await fetch(
-        "http://localhost:5000/orders/" + id,
+        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
         {
             method:"DELETE"
         }
@@ -271,7 +271,7 @@ async function trackDeliveryBoy(){
 JSON.parse(localStorage.getItem("user"));
 
 const response = await fetch(
-"http://localhost:5000/myorders/" + user.email
+"https://hyperlocal-backend-84rs.onrender.com/myorders/" + user.email
 );
 
 const orders = await response.json();
@@ -283,7 +283,7 @@ const deliveryEmail = latestOrder.deliveryBoy.email;
 
 
 const locationResponse = await fetch(
-    "http://localhost:5000/location/" + deliveryEmail
+    "https://hyperlocal-backend-84rs.onrender.com/location/" + deliveryEmail
 );
 
 const location = await locationResponse.json();

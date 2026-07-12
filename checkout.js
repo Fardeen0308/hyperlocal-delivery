@@ -19,7 +19,7 @@ async function placeOrder() {
     });
 
     const response = await fetch(
-        "http://localhost:5000/orders",
+        "https://hyperlocal-backend-84rs.onrender.com/orders",
         {
             method: "POST",
             headers: {
@@ -43,4 +43,40 @@ async function placeOrder() {
     localStorage.removeItem("cart");
 
     window.location.href = "orders.html";
+}
+
+async function payNow(totalAmount) {
+
+    const response = await fetch("https://hyperlocal-backend-84rs.onrender.com/create-order", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            amount: totalAmount
+        })
+    });
+
+    const order = await response.json();
+
+    const options = {
+        key:rzp_live_TCB78B9Fjaa5kd ,
+        amount: order.amount,
+        currency: order.currency,
+        name: "HyperLocal Delivery",
+        description: "Order Payment",
+        order_id: order.id,
+
+        handler: function (response) {
+
+            alert("Payment Successful 🎉");
+
+            console.log(response);
+
+        }
+    };
+
+    const rzp = new Razorpay(options);
+
+    rzp.open();
 }

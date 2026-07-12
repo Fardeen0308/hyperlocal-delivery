@@ -139,7 +139,7 @@ let allProducts = [];
 async function loadProducts() {
 
     const response = await fetch(
-        "http://localhost:5000/products"
+        "https://hyperlocal-backend-84rs.onrender.com/products"
     );
 
      allProducts =
@@ -156,7 +156,7 @@ async function loadProducts() {
       
         <div class="card"
 onclick="openProduct(
-'${product._id}',
+'${product.id}',
 '${product.name}',
 '${product.price}',
 '${product.image}',
@@ -199,7 +199,7 @@ product.reviews.reduce((sum, review) => sum + Number(review.rating), 0)
 
             <button onclick="event.stopPropagation(); addToCart(
             
-            '${product._id}',
+            '${product.id}',
 '${product.name}',
 '${product.price}',
 '${product.image}',
@@ -266,7 +266,7 @@ function filterCategory(category) {
             ${product.stock > 0
 ? `
 <button onclick="event.stopPropagation(); addToCart(
-'${product._id}',
+'${product.id}',
 
 '${product.name}',
 '${product.price}',
@@ -315,7 +315,7 @@ ${product.stock > 0
 async function loadBestProducts(){
 
     const response = await fetch(
-        "http://localhost:5000/bestsellers"
+        "https://hyperlocal-backend-84rs.onrender.com/bestsellers"
     );
 
     const products = await response.json();
