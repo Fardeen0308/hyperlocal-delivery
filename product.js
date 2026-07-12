@@ -35,7 +35,7 @@ async function addReview(){
     document.getElementById("comment").value;
 
     const response = await fetch(
-        `https://hyperlocal-backend-84rs.onrender.com/products/${product._id}/review`,
+        `https://hyperlocal-backend-84rs.onrender.com/products/${product.id}/review`,
         {
             method:"POST",
             headers:{
@@ -109,8 +109,8 @@ async function loadReviews(){
     const products = await response.json();
 
     const currentProduct =
-    products.find(p => p._id === product._id);
-
+    products.find(p => p.id ===
+        product.id);
     let html = "";
 
     currentProduct.reviews.forEach(review => {
@@ -151,7 +151,7 @@ async function loadReviews(){
     const products = await response.json();
 
     const currentProduct = products.find(
-        p => p._id === product.id
+        p => p.id === product.id
     );
 
     if(!currentProduct) return;

@@ -5,34 +5,43 @@
     <link rel="stylesheet" href="f.css">
 </head>
 <body>
+<header class="header">
 
-<header>
-    <h1>HyperLocal Delivery</h1>
+    <div class="delivery-banner">
+🚀 Delivery in 30 minutes | 🎉 Free Delivery above ₹499
+</div>
 
-  
-    
-    <div class="hero">
+    <div class="logo">
+        🛵 HyperLocal
+    </div>
+
+    <input
+        type="text"
+        id="search"
+        placeholder="Search groceries, fashion, electronics..."
+        onkeyup="searchProducts()">
+
+    <div class="header-buttons">
+
+        <a href="wishlist.html">❤️</a>
+
+        <a href="cart.html">
+            🛒 <span id="cartButton">0</span>
+        </a>
+
+        <a href="profile.html">👤</a>
+
+    </div>
+
+</header>
+
+<div class="hero">
 
     <h2>👋 Welcome to HyperLocal Delivery</h2>
 
     <p>Get groceries, electronics, fashion and more delivered in minutes.</p>
 
 </div>
-    
-
-    <a href="cart.html">
-        <button id="cartButton">
-            🛒Cart (0)
-        </button>
-    </a>
-
-<a href="profile.html">
-    <button>👨‍💼Profile</button>
-</a>
-
-<a href="wishlist.html">
-    <button>❤️ Wishlist</button>
-</a>
 
 <div class="slider">
 
@@ -41,35 +50,20 @@
 
 </div>
 
-    <div class="categories">
+<div class="categories">
 
     <button onclick="filterCategory('All')">All</button>
-
     <button onclick="filterCategory('Vegetables')">Vegetables</button>
-
     <button onclick="filterCategory('Fruits')">Fruits</button>
-
     <button onclick="filterCategory('Dairy')">Dairy</button>
-
     <button onclick="filterCategory('Bakery')">Bakery</button>
-
     <button onclick="filterCategory('Beverages')">Beverages</button>
-
     <button onclick="filterCategory('Snacks')">Snacks</button>
-
     <button onclick="filterCategory('Medicines')">Medicines</button>
-
     <button onclick="filterCategory('Electronics')">Electronics</button>
-
     <button onclick="filterCategory('Fashion')">Fashion</button>
 
 </div>
-</header>
-<input
-    type="text"
-    id="search"
-    placeholder="Search products..."
-    onkeyup="searchProducts()">
 
     <div id="products" class="products"></div>
 <h2>🔥 Best Selling Products</h2>
@@ -84,7 +78,7 @@ function addToCart(id, name, price, image) {
     JSON.parse(localStorage.getItem("cart")) || [];
 
     cart.push({
-        _id: id,
+        id: id,
         name: name,
         price: price,
         image: image,
@@ -97,6 +91,7 @@ function addToCart(id, name, price, image) {
     );
 
     alert("Added To Cart");
+    updateCartCount();
 }
 
 function addToWishlist(name, price, image) {
@@ -124,7 +119,7 @@ function openProduct(id, name, price, image, category){
     localStorage.setItem(
         "selectedProduct",
         JSON.stringify({
-            _id: id,
+            id: id,
             name,
             price,
             image,
@@ -154,7 +149,8 @@ async function loadProducts() {
 
         container.innerHTML += `
       
-        <div class="card"
+      
+<div class="card" 
 onclick="openProduct(
 '${product.id}',
 '${product.name}',
@@ -164,25 +160,23 @@ onclick="openProduct(
 )">
 
 <div class="offer">
-
-${product.sold >= 10 ? "🔥 Best Seller" : "🔥 20% OFF"}
-
+${product.sold >= 10 ? "🔥 Best Seller" : "20% OFF"}
 </div>
-            <img
-            src="${product.image}"
-            width="200"
-            height="200">
 
-            <h2>${product.name}</h2>
-             
-            <p>${product.category}</p>
+<img src="${product.image}">
 
+<h2>${product.name}</h2>
 
-            <p>₹${product.price}</p>
+<p>${product.category}</p>
 
-            <p>Stock: ${product.stock}</p>
+<p class="price">₹${product.price}</p>
 
-            <div class="rating">
+<p class="stock">
+${product.stock>0?"🟢 In Stock":"🔴 Out of Stock"}
+</p>
+
+<div class="rating">
+           
 ⭐ ${
 product.reviews && product.reviews.length
 ?
@@ -197,39 +191,20 @@ product.reviews.reduce((sum, review) => sum + Number(review.rating), 0)
 </div>
 
 
-            <button onclick="event.stopPropagation(); addToCart(
-            
-            '${product.id}',
-'${product.name}',
-'${product.price}',
-'${product.image}',
-
-)">
+<button onclick="event.stopPropagation();addToCart('${product.id}','${product.name}','${product.price}','${product.image}')">
 🛒 Add To Cart
 </button>
 
-<button onclick="event.stopPropagation(); buyNow(
-'${product.name}',
-'${product.price}',
-'${product.image}'
-)">
+<button onclick="event.stopPropagation();buyNow('${product.name}','${product.price}','${product.image}')">
 ⚡ Buy Now
 </button>
 
-<button onclick="event.stopPropagation(); addToWishlist(
-'${product.name}',
-'${product.price}',
-'${product.image}'
-)">
+<button onclick="event.stopPropagation();addToWishlist('${product.name}','${product.price}','${product.image}')">
 ❤️ Wishlist
 </button>
 
-            
-
-
-
-        </div>
-        `;
+</div>
+`;
     });
 }
 
@@ -259,15 +234,17 @@ function filterCategory(category) {
 
             <p>${product.category}</p>
 
-            <p>₹${product.price}</p>
 
-            
+            <p class="price">₹${product.price}</p>
 
-            ${product.stock > 0
+<p class="stock">
+${product.stock > 0 ? "🟢 In Stock" : "🔴 Out of Stock"}
+</p>
+
+${product.stock > 0
 ? `
 <button onclick="event.stopPropagation(); addToCart(
 '${product.id}',
-
 '${product.name}',
 '${product.price}',
 '${product.image}'
@@ -285,6 +262,7 @@ function filterCategory(category) {
 ${product.stock > 0
 ? `
 <button onclick="event.stopPropagation(); buyNow(
+'${product.id}',
 '${product.name}',
 '${product.price}',
 '${product.image}'
@@ -337,6 +315,7 @@ async function loadBestProducts(){
             <p>🔥 Sold: ${product.sold}</p>
 
             <p>₹${product.price}</p>
+           
 
         </div>
         `;
@@ -369,11 +348,12 @@ function searchProducts() {
 
     });
 }
-function buyNow(name, price, image) {
+function buyNow( id,name, price, image) {
 
     localStorage.setItem(
         "buyNowProduct",
         JSON.stringify({
+            id,
             name,
             price,
             image
