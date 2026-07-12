@@ -190,6 +190,59 @@ app.get("/bestsellers", async (req, res) => {
     res.json(data);
 });
 
+app.post("/products/:id/review", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", req.params.id)
+        .single();
+
+    if (error || !data) {
+        return res.status(404).json({
+            message: "Product not found"
+        });
+    }
+
+    let reviews = data.reviews || [];
+
+    reviews.push({
+        user: req.body.user,
+        rating: Number(req.body.rating),
+        comment: req.body.comment,
+        date: new Date()
+    });
+
+    const { error: updateError } = await supabase
+        .from("products")
+        .update({ reviews })
+        .eq("id", req.params.id);
+
+    if (updateError) {
+        return res.status(500).json(updateError);
+    }
+
+    res.json({
+        message: "Review Added Successfully"
+    });
+
+});
+
+app.get("/related/:category", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("category", req.params.category);
+
+    if (error) {
+        return res.status(500).json(error);
+    }
+
+    res.json(data);
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
