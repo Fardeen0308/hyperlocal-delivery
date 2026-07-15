@@ -42,6 +42,12 @@ Credit/Debit Card<br><br>
 </div>
 
 <script>
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user) {
+    window.location.href = "login.html";
+}
 async function placeOrder() {
 
     let customerName =

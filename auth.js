@@ -1,3 +1,10 @@
+const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user) {
+    window.location.href = "login.html";
+}
+
+
 function signup() {
 
     let user = {
@@ -31,7 +38,7 @@ function login() {
 
         alert("Login Successful");
 
-        window.location.href = "f.html";
+        window.location.href = "index.html";
 
     } else {
 

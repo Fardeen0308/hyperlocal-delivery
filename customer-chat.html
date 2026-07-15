@@ -23,6 +23,11 @@ margin-bottom:10px;
 <button onclick="sendMessage()">Send</button>
 
 <script>
+    const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user) {
+    window.location.href = "login.html";
+}
 
 async function loadMessages(){
 

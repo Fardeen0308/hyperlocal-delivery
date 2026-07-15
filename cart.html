@@ -46,6 +46,12 @@ Discount: ₹0
     <button>Proceed To Checkout</button>
 </a>
 <script>
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user) {
+    window.location.href = "login.html";
+}
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
 let cartItems = document.getElementById("cartItems");

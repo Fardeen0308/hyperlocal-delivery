@@ -91,9 +91,15 @@ Add Product
 <h2>Products</h2>
 
 <div id="products"></div>
-
+<script src="auth.js"></script>
 <script src="dashboard.js"></script>
 <script>
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user) {
+    window.location.href = "login.html";
+}
     
 document.getElementById("productImage")
 .addEventListener("change", function(event){

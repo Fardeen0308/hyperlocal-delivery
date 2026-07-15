@@ -296,6 +296,35 @@ app.post("/login", async (req, res) => {
 
 });
 
+app.post("/orders", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("orders")
+        .insert([{
+            customerName: req.body.customerName,
+            email: req.body.email,
+            phone: req.body.phone,
+            address: req.body.address,
+            products: req.body.products,
+            total: req.body.total,
+            payment: req.body.payment,
+            status: req.body.status
+        }])
+        .select();
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Order Placed Successfully",
+        order: data
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });

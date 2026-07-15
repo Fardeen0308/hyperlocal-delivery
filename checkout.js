@@ -9,6 +9,8 @@ async function placeOrder() {
     const address =
     document.getElementById("address").value;
 
+    const user = JSON.parse(localStorage.getItem("user"));
+
     const products =
     JSON.parse(localStorage.getItem("cart")) || [];
 
@@ -25,14 +27,16 @@ async function placeOrder() {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                customerName,
-                phone,
-                address,
-                products,
-                total,
-                status: "Order Placed"
-            })
+           body: JSON.stringify({
+    customerName,
+    email: user.email,
+    phone,
+    address,
+    products,
+    total,
+    payment: "Cash on Delivery",
+    status: "Order Placed"
+})
         }
     );
 
@@ -60,7 +64,7 @@ async function payNow(totalAmount) {
     const order = await response.json();
 
     const options = {
-        key:rzp_live_TCB78B9Fjaa5kd ,
+        key:"rzp_live_TCB78B9Fjaa5kd" ,
         amount: order.amount,
         currency: order.currency,
         name: "HyperLocal Delivery",

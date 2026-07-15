@@ -1,3 +1,9 @@
+const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user) {
+    window.location.href = "login.html";
+}
+
 async function loadOrders() {
 
     const response = await fetch(
