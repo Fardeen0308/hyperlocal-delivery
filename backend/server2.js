@@ -243,6 +243,59 @@ app.get("/related/:category", async (req, res) => {
 
 });
 
+app.post("/signup", async (req, res) => {
+
+    const { name, email, password } = req.body;
+
+    const { data, error } = await supabase
+        .from("users")
+        .insert([
+            {
+                name,
+                email,
+                password,
+                role: "customer"
+            }
+        ])
+        .select();
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Signup Successful",
+        user: data[0]
+    });
+
+});
+
+app.post("/login", async (req, res) => {
+
+    const { email, password } = req.body;
+
+    const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", email)
+        .eq("password", password)
+        .single();
+
+    if (error || !data) {
+        return res.status(401).json({
+            message: "Invalid Email or Password"
+        });
+    }
+
+    res.json({
+        message: "Login Successful",
+        user: data
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
