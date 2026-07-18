@@ -14,7 +14,7 @@ let delivered = 0;
 
 orders.forEach(order => {
 
-    revenue += Number(order.total);
+    revenue += Number(order.grandTotal);
 
     if(order.status === "Delivered"){
         delivered++;
@@ -45,7 +45,15 @@ delivered;
 
             <p>${order.address}</p>
 
-            <p>₹${order.total}</p>
+           <p><b>Products:</b> ₹${order.subtotal}</p>
+
+<p><b>Delivery:</b> ₹${order.delivery}</p>
+
+<p><b>GST:</b> ₹${order.gst}</p>
+
+<p><b>Discount:</b> ₹${order.discount}</p>
+
+<h3>Total Paid: ₹${order.grandTotal}</h3>
 
             <p>Status: ${order.status}</p>
 
