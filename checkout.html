@@ -67,10 +67,12 @@ JSON.parse(localStorage.getItem("user"));
 
     let total = 0;
 
-    products.forEach(product => {
-        total += Number(product.price);
-    });
+products.forEach(product => {
+    total += Number(product.price) * (product.quantity || 1);
+});
 
+console.log("Products:", products);
+console.log("Total:", total);
     const payment =
 document.querySelector(
 'input[name="payment"]:checked'
@@ -129,7 +131,8 @@ document.querySelector(
                 email: user.email,
                 products,
                 total,
-                payment
+                payment,
+                status: "Pending"
             })
         }
     );
