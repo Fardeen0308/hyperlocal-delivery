@@ -153,14 +153,14 @@ if(order.status=="Delivered"){
 
 ` : ""}
             ${order.status != "Delivered" ? `
-<button onclick="cancelOrder('${order._id}')">
+<button onclick="cancelOrder('${order.id}')">
 ❌ Cancel Order
 </button>
 ` : `
 
 <h3>⭐ Rate Delivery Partner</h3>
 
-<select id="rating-${order._id}">
+<select id="rating-${order.id}">
 <option value="5">⭐⭐⭐⭐⭐</option>
 <option value="4">⭐⭐⭐⭐</option>
 <option value="3">⭐⭐⭐</option>
@@ -168,7 +168,7 @@ if(order.status=="Delivered"){
 <option value="1">⭐</option>
 </select>
 
-<button onclick="rateDeliveryBoy('${order._id}')">
+<button onclick="rateDeliveryBoy('${order.id}')">
 Submit Rating
 </button>
 
