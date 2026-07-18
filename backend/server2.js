@@ -361,6 +361,44 @@ app.delete("/orders/:id", async (req, res) => {
 
 });
 
+app.get("/orders", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .order("id", { ascending: false });
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json(data);
+
+});
+
+app.put("/orders/:id", async (req, res) => {
+
+    const { error } = await supabase
+        .from("orders")
+        .update({
+            status: req.body.status
+        })
+        .eq("id", req.params.id);
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Order Updated Successfully"
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
