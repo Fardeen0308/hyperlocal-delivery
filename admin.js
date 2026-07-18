@@ -49,11 +49,11 @@ delivered;
 
             <p>Status: ${order.status}</p>
 
-            <button onclick="updateStatus('${order._id}')">
+            <button onclick="updateStatus('${order.id}')">
                 Next Status
             </button>
 
-            <button onclick="deleteOrder('${order._id}')">
+            <button onclick="deleteOrder('${order.id}')">
     Delete Order
 </button>
 
@@ -69,10 +69,20 @@ loadOrders();
 
 async function updateStatus(id) {
 
+    const status = prompt(
+        "Enter Status:\nPending\nPreparing\nOut for Delivery\nDelivered"
+    );
+
+    if (!status) return;
+
     const response = await fetch(
         "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
         {
-            method: "PUT"
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status })
         }
     );
 
@@ -81,8 +91,9 @@ async function updateStatus(id) {
     alert(data.message);
 
     loadOrders();
-
 }
+
+
 
 async function deleteOrder(id) {
 
