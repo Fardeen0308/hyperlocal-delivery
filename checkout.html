@@ -70,6 +70,13 @@ JSON.parse(localStorage.getItem("user"));
 products.forEach(product => {
     total += Number(product.price) * (product.quantity || 1);
 });
+let delivery = 40;
+
+let gst = total * 0.05;
+
+let discount = 0;
+
+let grandTotal = total + delivery + gst - discount;
 
 console.log("Products:", products);
 console.log("Total:", total);
@@ -130,7 +137,11 @@ document.querySelector(
                 address,
                 email: user.email,
                 products,
-                total,
+                subtotal: total,
+                delivery,
+                gst,
+                discount,
+                grandTotal,
                 payment,
                 status: "Pending"
             })

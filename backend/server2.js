@@ -306,7 +306,11 @@ app.post("/orders", async (req, res) => {
             phone: req.body.phone,
             address: req.body.address,
             products: req.body.products,
-            total: req.body.total,
+            subtotal: req.body.subtotal,
+delivery: req.body.delivery,
+gst: req.body.gst,
+discount: req.body.discount,
+grandTotal: req.body.grandTotal,
             payment: req.body.payment,
             status: req.body.status
         }])
