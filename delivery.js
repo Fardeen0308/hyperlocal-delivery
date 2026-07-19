@@ -20,8 +20,8 @@ async function loadOrders(){
 
 if(
     order.status === "Out for Delivery" &&
-    order.deliveryBoy &&
-    order.deliveryBoy.email === user.email
+    order.deliveryPartnerEmail === user.email
+
 ){
             container.innerHTML += `
             <div class="card">

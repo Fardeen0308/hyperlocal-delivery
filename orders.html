@@ -139,25 +139,16 @@ if(order.status=="Delivered"){
 
             <p><b>Status:</b> ${order.status}</p>
 
-           ${order.deliveryBoy ? `
+          ${order.deliveryPartnerName ? `
 <h3>🚚 Delivery Partner</h3>
 
-<p>👤 ${order.deliveryBoy.name}</p>
+<p>👤 ${order.deliveryPartnerName}</p>
 
-<p>📞 ${order.deliveryBoy.phone}</p>
+<p>📧 ${order.deliveryPartnerEmail}</p>
 
-<p>🚲 ${order.deliveryBoy.vehicle}</p>
-
-<p>⭐ ${order.deliveryBoy.rating}</p>
-
-<a href="tel:${order.deliveryBoy.phone}">
-<button>📞 Call Delivery Partner</button>
-</a>
-
-<button onclick="openChat('${order.deliveryBoy.email}')">
+<button onclick="openChat('${order.deliveryPartnerEmail}')">
 💬 Chat
 </button>
-
 
 ` : ""}
             ${order.status != "Delivered" ? `
@@ -292,8 +283,11 @@ const orders = await response.json();
 
 const latestOrder = orders[orders.length - 1];
 
-const deliveryEmail = latestOrder.deliveryBoy.email;
+if (!latestOrder || !latestOrder.deliveryPartnerEmail) {
+    return;
+}
 
+const deliveryEmail = latestOrder.deliveryPartnerEmail;
 
 
 const locationResponse = await fetch(
