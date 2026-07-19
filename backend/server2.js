@@ -521,6 +521,50 @@ app.put("/delivery-partners/status", async (req,res)=>{
     });
 
 });
+
+app.post("/location", async (req, res) => {
+
+    const { email, lat, lng } = req.body;
+
+    const { error } = await supabase
+        .from("locations")
+        .upsert({
+            email,
+            lat,
+            lng
+        }, {
+            onConflict: "email"
+        });
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Location Updated"
+    });
+
+});
+
+app.get("/location/:email", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("locations")
+        .select("*")
+        .eq("email", req.params.email)
+        .single();
+
+    if (error) {
+        return res.status(404).json({
+            message: "Location not found"
+        });
+    }
+
+    res.json(data);
+
+});
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
