@@ -10,10 +10,13 @@ async function placeOrder() {
     document.getElementById("address").value;
 
     const user = JSON.parse(localStorage.getItem("user"));
+let products = JSON.parse(localStorage.getItem("cart")) || [];
 
-    const products =
-    JSON.parse(localStorage.getItem("cart")) || [];
+const buyNowProduct = JSON.parse(localStorage.getItem("buyNowProduct"));
 
+if (buyNowProduct) {
+    products = [buyNowProduct];
+}
     let total = 0;
 
     products.forEach(product => {
@@ -27,15 +30,19 @@ async function placeOrder() {
             headers: {
                 "Content-Type": "application/json"
             },
-           body: JSON.stringify({
+          body: JSON.stringify({
     customerName,
     email: user.email,
     phone,
     address,
     products,
-    total,
+    subtotal: total,
+    delivery,
+    gst,
+    discount,
+    grandTotal,
     payment: "Cash on Delivery",
-    status: "Order Placed"
+    status: "Pending"
 })
         }
     );
