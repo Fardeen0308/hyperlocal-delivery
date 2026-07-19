@@ -202,8 +202,12 @@ product.reviews.reduce((sum, review) => sum + Number(review.rating), 0)
 🛒 Add To Cart
 </button>
 
-<button onclick="event.stopPropagation();buyNow('${product.name}','${product.price}','${product.image}')">
-⚡ Buy Now
+<button onclick="event.stopPropagation();buyNow(
+'${product.id}',
+'${product.name}',
+'${product.price}',
+'${product.image}'
+)
 </button>
 
 <button onclick="event.stopPropagation();addToWishlist('${product.name}','${product.price}','${product.image}')">
