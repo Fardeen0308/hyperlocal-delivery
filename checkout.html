@@ -58,9 +58,13 @@ async function placeOrder() {
 
     let phone =
     document.getElementById("phone").value;
+let products = JSON.parse(localStorage.getItem("cart")) || [];
 
-    let products =
-    JSON.parse(localStorage.getItem("cart")) || [];
+const buyNowProduct = JSON.parse(localStorage.getItem("buyNowProduct"));
+
+if (buyNowProduct) {
+    products = [buyNowProduct];
+}
 console.log(products);
     const user =
 JSON.parse(localStorage.getItem("user"));
@@ -153,6 +157,7 @@ document.querySelector(
     alert(data.message);
 
     localStorage.removeItem("cart");
+localStorage.removeItem("buyNowProduct");
 
     window.location.href = "orders.html";
 }
