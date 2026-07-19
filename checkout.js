@@ -52,6 +52,7 @@ if (buyNowProduct) {
     alert(data.message);
 
     localStorage.removeItem("cart");
+    localStorage.removeItem("buyNowProduct");
 
     window.location.href = "orders.html";
 }
