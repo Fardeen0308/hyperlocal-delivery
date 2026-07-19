@@ -100,7 +100,11 @@ async function loadDeliveryPartners(){
         "https://hyperlocal-backend-84rs.onrender.com/delivery-partners"
     );
 
-    deliveryPartners = await response.json();
+    const partners = await response.json();
+
+    deliveryPartners = partners.filter(
+        partner => partner.status === "Available"
+    );
 
 }
 

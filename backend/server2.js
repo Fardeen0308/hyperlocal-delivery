@@ -384,6 +384,20 @@ app.get("/orders", async (req, res) => {
 
 app.put("/orders/:id", async (req, res) => {
 
+    // First, get the order
+    const { data: order, error: fetchError } = await supabase
+        .from("orders")
+        .select("deliveryPartnerEmail")
+        .eq("id", req.params.id)
+        .single();
+
+    if (fetchError) {
+        return res.status(500).json({
+            message: fetchError.message
+        });
+    }
+
+    // Update the order status
     const { error } = await supabase
         .from("orders")
         .update({
@@ -397,12 +411,23 @@ app.put("/orders/:id", async (req, res) => {
         });
     }
 
+    // If delivered, make the partner available again
+    if (req.body.status === "Delivered" && order.deliveryPartnerEmail) {
+
+        await supabase
+            .from("deliveryPartners")
+            .update({
+                status: "Available"
+            })
+            .eq("email", order.deliveryPartnerEmail);
+
+    }
+
     res.json({
         message: "Order Updated Successfully"
     });
 
 });
-
 app.post("/delivery-partners", async (req, res) => {
 
     const { data, error } = await supabase
@@ -457,6 +482,12 @@ app.put("/assign-delivery/:id", async (req, res) => {
             status: "Out for Delivery"
         })
         .eq("id", req.params.id);
+        await supabase
+    .from("deliveryPartners")
+    .update({
+        status:"Busy"
+    })
+    .eq("email", req.body.email);
 
     if (error) {
         return res.status(500).json({
@@ -466,6 +497,27 @@ app.put("/assign-delivery/:id", async (req, res) => {
 
     res.json({
         message: "Delivery Partner Assigned Successfully"
+    });
+
+});
+
+app.put("/delivery-partners/status", async (req,res)=>{
+
+    const { email, status } = req.body;
+
+    const { error } = await supabase
+        .from("deliveryPartners")
+        .update({ status })
+        .eq("email", email);
+
+    if(error){
+        return res.status(500).json({
+            message:error.message
+        });
+    }
+
+    res.json({
+        message:"Status Updated"
     });
 
 });

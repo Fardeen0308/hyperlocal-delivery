@@ -156,3 +156,36 @@ document.getElementById("earnings").innerHTML =
 }
 
 loadStats();
+
+let currentStatus = "Available";
+
+async function toggleStatus(){
+
+    currentStatus =
+    currentStatus === "Available"
+    ? "Busy"
+    : "Available";
+
+    document.getElementById("statusBtn").innerHTML =
+    currentStatus === "Available"
+    ? "🟢 Available"
+    : "🔴 Busy";
+
+    const user =
+    JSON.parse(localStorage.getItem("user"));
+
+    await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/delivery-partners/status",
+        {
+            method:"PUT",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                email:user.email,
+                status:currentStatus
+            })
+        }
+    );
+
+}
