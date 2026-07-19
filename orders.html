@@ -139,6 +139,12 @@ if(order.status=="Delivered"){
 
             <p><b>Status:</b> ${order.status}</p>
 
+            ${order.status !== "Delivered" ? `
+<p style="color:red;font-size:20px;">
+<b>🔐 Delivery OTP:</b> ${order.deliveryOtp}
+</p>
+` : ""}
+
           ${order.deliveryPartnerName ? `
 <h3>🚚 Delivery Partner</h3>
 

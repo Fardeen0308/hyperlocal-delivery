@@ -298,6 +298,9 @@ app.post("/login", async (req, res) => {
 
 app.post("/orders", async (req, res) => {
 
+    const deliveryOtp =
+Math.floor(1000 + Math.random() * 9000).toString();
+
     const { data, error } = await supabase
         .from("orders")
         .insert([{
@@ -312,7 +315,8 @@ gst: req.body.gst,
 discount: req.body.discount,
 grandTotal: req.body.grandTotal,
             payment: req.body.payment,
-            status: req.body.status
+            status: req.body.status,
+            deliveryOtp: deliveryOtp
         }])
         .select();
 
