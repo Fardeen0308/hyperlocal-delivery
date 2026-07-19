@@ -30,11 +30,11 @@ if(
 
             <p>${order.address}</p>
 
-            <p>₹${order.total}</p>
+            <p><b>Total Paid:</b> ₹${order.grandTotal}</p>
 
             
 
-            <button onclick="deliver('${order._id}')">
+            <button onclick="deliver('${order.id}')">
             ✅ Delivered
             </button>
 
@@ -57,7 +57,13 @@ async function deliver(id){
     const response = await fetch(
         "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
         {
-            method:"PUT"
+            method:"PUT",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                status:"Delivered"
+            })
         }
     );
 
@@ -66,19 +72,16 @@ async function deliver(id){
     alert(data.message);
 
     loadOrders();
+    loadStats();
 
 }
-function openCustomerChat(order){
+function openCustomerChat(email){
 
-    localStorage.setItem("chatWith", order.email);
+    localStorage.setItem("chatWith", email);
 
     window.location.href = "chat.html";
 
 }
-
-
-  
-
 
 function sendLocation(){
 
