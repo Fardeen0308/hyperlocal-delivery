@@ -569,6 +569,64 @@ app.get("/location/:email", async (req, res) => {
     res.json(data);
 
 });
+
+app.post("/verify-otp/:id", async (req, res) => {
+
+    // Get the order
+    const { data: order, error: fetchError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", req.params.id)
+        .single();
+
+    if (fetchError) {
+        return res.status(500).json({
+            success: false,
+            message: fetchError.message
+        });
+    }
+
+    // Check OTP
+    if (order.deliveryOtp !== req.body.otp) {
+        return res.json({
+            success: false,
+            message: "❌ Invalid OTP"
+        });
+    }
+
+    // Mark order as delivered
+    const { error } = await supabase
+        .from("orders")
+        .update({
+            status: "Delivered"
+        })
+        .eq("id", req.params.id);
+
+    if (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+
+    // Make delivery partner available again
+    if (order.deliveryPartnerEmail) {
+
+        await supabase
+            .from("deliveryPartners")
+            .update({
+                status: "Available"
+            })
+            .eq("email", order.deliveryPartnerEmail);
+
+    }
+
+    res.json({
+        success: true,
+        message: "✅ Delivery Completed Successfully"
+    });
+
+});
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
