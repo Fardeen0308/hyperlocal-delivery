@@ -445,6 +445,30 @@ app.get("/delivery-partners", async (req, res) => {
     res.json(data);
 
 });
+
+app.put("/assign-delivery/:id", async (req, res) => {
+
+    const { error } = await supabase
+        .from("orders")
+        .update({
+            deliveryPartnerId: req.body.id,
+            deliveryPartnerName: req.body.name,
+            deliveryPartnerEmail: req.body.email,
+            status: "Out for Delivery"
+        })
+        .eq("id", req.params.id);
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Delivery Partner Assigned Successfully"
+    });
+
+});
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
