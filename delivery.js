@@ -1,3 +1,4 @@
+let previousOrders = 0;
 const user = JSON.parse(localStorage.getItem("user"));
 
 if (!user) {
@@ -15,8 +16,6 @@ async function loadOrders(){
     container.innerHTML = "";
 
     orders.forEach(order=>{
-
-        const user = JSON.parse(localStorage.getItem("user"));
 
 if(
     order.status === "Out for Delivery" &&
@@ -45,12 +44,24 @@ if(
             </div>
             `;
         }
+       
 
     });
+}
+  const currentOrders = container.children.length;
 
+if (currentOrders > previousOrders && previousOrders !== 0) {
+    alert("📦 New delivery assigned!");
 }
 
+previousOrders = currentOrders;
+
+
 loadOrders();
+ setInterval(() => {
+    loadOrders();
+    loadStats();
+}, 5000);
 
 async function deliver(id){
 
@@ -134,9 +145,9 @@ let earnings = 0;
 orders.forEach(order=>{
 
 if(
-order.deliveryBoy &&
-order.deliveryBoy.email===user.email &&
-order.status==="Delivered"
+order.deliveryPartnerEmail === user.email &&
+order.status === "Delivered"
+
 ){
 
 completed++;
@@ -152,6 +163,28 @@ completed;
 
 document.getElementById("earnings").innerHTML =
 "₹" + earnings;
+const history = document.getElementById("history");
+
+history.innerHTML = "";
+
+orders.forEach(order => {
+
+    if (
+        order.deliveryPartnerEmail === user.email &&
+        order.status === "Delivered"
+    ) {
+
+        history.innerHTML += `
+        <div class="card">
+            <h3>${order.customerName}</h3>
+            <p>${order.address}</p>
+            <p>Earned ₹50</p>
+        </div>
+        `;
+
+    }
+
+});
 
 }
 
