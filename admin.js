@@ -24,6 +24,18 @@ orders.forEach(order => {
 
 });
 
+let partnerOptions = "";
+
+deliveryPartners.forEach(partner => {
+
+    partnerOptions += `
+    <option value="${partner.id}">
+        ${partner.name}
+    </option>
+    `;
+
+});
+
 document.getElementById("totalRevenue").innerText =
 "₹" + revenue;
 
@@ -65,6 +77,14 @@ delivered;
     Delete Order
 </button>
 
+<select id="partner-${order.id}">
+${partnerOptions}
+</select>
+
+<button onclick="assignPartner('${order.id}')">
+🚚 Assign Delivery Partner
+</button>
+
    
         </div>
         `;
@@ -72,8 +92,27 @@ delivered;
     });
 
 }
+let deliveryPartners = [];
 
-loadOrders();
+async function loadDeliveryPartners(){
+
+    const response = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/delivery-partners"
+    );
+
+    deliveryPartners = await response.json();
+
+}
+
+async function start(){
+
+    await loadDeliveryPartners();
+
+    loadOrders();
+
+}
+
+start();
 
 async function updateStatus(id) {
 
@@ -114,6 +153,37 @@ async function deleteOrder(id) {
         "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
         {
             method: "DELETE"
+        }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+
+    loadOrders();
+
+}
+
+async function assignPartner(orderId){
+
+    const partnerId =
+    document.getElementById("partner-"+orderId).value;
+
+    const partner =
+    deliveryPartners.find(p=>p.id==partnerId);
+
+    const response = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/assign-delivery/"+orderId,
+        {
+            method:"PUT",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                id:partner.id,
+                name:partner.name,
+                email:partner.email
+            })
         }
     );
 
