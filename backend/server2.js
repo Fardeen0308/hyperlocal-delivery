@@ -403,6 +403,48 @@ app.put("/orders/:id", async (req, res) => {
 
 });
 
+app.post("/delivery-partners", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("deliveryPartners")
+        .insert([{
+            name: req.body.name,
+            email: req.body.email,
+            phone: req.body.phone,
+            vehicle: req.body.vehicle,
+            rating: 5,
+            status: "Available"
+        }])
+        .select();
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Delivery Partner Added Successfully",
+        partner: data
+    });
+
+});
+
+app.get("/delivery-partners", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("deliveryPartners")
+        .select("*");
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json(data);
+
+});
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
