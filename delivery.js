@@ -33,9 +33,14 @@ if(
 
             
 
-            <button onclick="deliver('${order.id}')">
-            ✅ Delivered
-            </button>
+            <input
+type="text"
+id="otp-${order.id}"
+placeholder="Enter OTP">
+
+<button onclick="verifyOtp('${order.id}')">
+✅ Verify & Deliver
+</button>
 
             <button onclick="openCustomerChat('${order.email}')">
 💬 Chat Customer
@@ -84,6 +89,36 @@ async function deliver(id){
 
     loadOrders();
     loadStats();
+
+}
+async function verifyOtp(id){
+
+    const otp =
+    document.getElementById("otp-"+id).value;
+
+    const response = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/verify-otp/"+id,
+        {
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                otp
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+
+    if(data.success){
+
+        loadOrders();
+        loadStats();
+
+    }
 
 }
 function openCustomerChat(email){
