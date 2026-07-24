@@ -31,6 +31,10 @@
 
         <a href="profile.html">👤</a>
 
+        <a href="notifications.html">
+🔔 <span id="notificationCount">0</span>
+</a>
+
     </div>
 
 </header>
@@ -413,7 +417,29 @@ function updateCartCount(){
 
 updateCartCount();
 
+async function loadNotificationCount(){
 
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if(!user) return;
+
+    const response = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/notifications/" + user.email
+    );
+
+    const notifications = await response.json();
+
+    const unread =
+    notifications.filter(n => !n.isRead).length;
+
+    document.getElementById("notificationCount").innerText =
+    unread;
+
+}
+
+loadNotificationCount();
+
+setInterval(loadNotificationCount,5000);
 
 </script>
 

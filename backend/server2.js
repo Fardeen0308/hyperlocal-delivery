@@ -28,6 +28,19 @@ const upload = multer({
     dest: "uploads/"
 });
 
+async function sendNotification(email, title, message) {
+
+    await supabase
+        .from("notifications")
+        .insert([{
+            email,
+            title,
+            message,
+            isRead: false
+        }]);
+
+}
+
 app.get("/", (req, res) => {
     res.send("HyperLocal Backend Running with Supabase 🚀");
 });
@@ -325,6 +338,11 @@ grandTotal: req.body.grandTotal,
             message: error.message
         });
     }
+    await sendNotification(
+    req.body.email,
+    "📦 Order Confirmed",
+    "Your order has been placed successfully."
+);
 
     res.json({
         message: "Order Placed Successfully",
@@ -498,7 +516,11 @@ app.put("/assign-delivery/:id", async (req, res) => {
             message: error.message
         });
     }
-
+await sendNotification(
+    deliveryPartner.email,
+    "🛵 New Delivery",
+    "A new order has been assigned to you."
+);
     res.json({
         message: "Delivery Partner Assigned Successfully"
     });
@@ -620,10 +642,54 @@ app.post("/verify-otp/:id", async (req, res) => {
             .eq("email", order.deliveryPartnerEmail);
 
     }
+    await sendNotification(
+    order.email,
+    "✅ Order Delivered",
+    "Your order has been delivered successfully."
+);
 
     res.json({
         success: true,
         message: "✅ Delivery Completed Successfully"
+    });
+
+});
+
+app.get("/notifications/:email", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("email", req.params.email)
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json(data);
+
+});
+
+app.put("/notifications/read/:email", async (req, res) => {
+
+    const { error } = await supabase
+        .from("notifications")
+        .update({
+            isRead: true
+        })
+        .eq("email", req.params.email);
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Notifications marked as read"
     });
 
 });
