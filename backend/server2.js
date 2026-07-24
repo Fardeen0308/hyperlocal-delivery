@@ -30,7 +30,7 @@ const upload = multer({
 
 async function sendNotification(email, title, message) {
 
-    await supabase
+    const { data, error } = await supabase
         .from("notifications")
         .insert([{
             email,
@@ -39,7 +39,12 @@ async function sendNotification(email, title, message) {
             isRead: false
         }]);
 
+    console.log("Notification Data:", data);
+    console.log("Notification Error:", error);
+
 }
+
+
 
 app.get("/", (req, res) => {
     res.send("HyperLocal Backend Running with Supabase 🚀");
@@ -517,7 +522,7 @@ app.put("/assign-delivery/:id", async (req, res) => {
         });
     }
 await sendNotification(
-    deliveryPartner.email,
+    req.body.email,
     "🛵 New Delivery",
     "A new order has been assigned to you."
 );
