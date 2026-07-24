@@ -343,11 +343,15 @@ grandTotal: req.body.grandTotal,
             message: error.message
         });
     }
-    await sendNotification(
+   console.log("Before sendNotification");
+
+await sendNotification(
     req.body.email,
     "📦 Order Confirmed",
     "Your order has been placed successfully."
 );
+
+console.log("After sendNotification");
 
     res.json({
         message: "Order Placed Successfully",
