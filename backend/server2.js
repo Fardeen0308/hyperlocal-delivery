@@ -702,6 +702,56 @@ app.put("/notifications/read/:email", async (req, res) => {
     });
 
 });
+
+app.post("/rate-delivery/:id", async (req, res) => {
+
+    const { data: order, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", req.params.id)
+        .single();
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    if (order.isRated) {
+        return res.json({
+            message: "You have already rated this delivery."
+        });
+    }
+
+    const { data: partner } = await supabase
+        .from("deliveryPartners")
+        .select("rating")
+        .eq("email", order.deliveryPartnerEmail)
+        .single();
+
+    const newRating =
+        (Number(partner.rating) + Number(req.body.rating)) / 2;
+
+    await supabase
+        .from("deliveryPartners")
+        .update({
+            rating: newRating
+        })
+        .eq("email", order.deliveryPartnerEmail);
+
+    await supabase
+        .from("orders")
+        .update({
+            isRated: true
+        })
+        .eq("id", req.params.id);
+
+    res.json({
+        message: "⭐ Thank you for your rating!"
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
