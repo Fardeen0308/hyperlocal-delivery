@@ -22,7 +22,8 @@ async function login() {
 
     const data = await response.json();
 
-    console.log(data.user);
+   console.log("LOGIN RESPONSE:", data);
+alert(JSON.stringify(data));
 
     if (response.ok) {
 
