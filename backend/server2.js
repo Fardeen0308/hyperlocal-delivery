@@ -756,7 +756,7 @@ app.get("/admin-analytics", async (req, res) => {
 
     const { data: orders } = await supabase
         .from("orders")
-        .select("grandTotal");
+        .select("*");
 
     const { data: customers } = await supabase
         .from("users")
@@ -767,16 +767,116 @@ app.get("/admin-analytics", async (req, res) => {
         .select("id");
 
     let revenue = 0;
+    const productSales = {};
 
     orders.forEach(order => {
+
         revenue += Number(order.grandTotal || 0);
+
+        if(order.products){
+
+            order.products.forEach(product => {
+
+                if(productSales[product.name]){
+                    productSales[product.name]++;
+                }else{
+                    productSales[product.name]=1;
+                }
+
+            });
+
+        }
+
     });
+
+    const bestSellingProducts =
+        Object.entries(productSales)
+        .sort((a,b)=>b[1]-a[1]);
+
+        let pending = 0;
+let preparing = 0;
+let outForDelivery = 0;
+let delivered = 0;
+
+orders.forEach(order => {
+
+    if(order.status=="Pending") pending++;
+
+    if(order.status=="Preparing") preparing++;
+
+    if(order.status=="Out for Delivery") outForDelivery++;
+
+    if(order.status=="Delivered") delivered++;
+
+});
 
     res.json({
         totalOrders: orders.length,
         totalRevenue: revenue,
         totalCustomers: customers.length,
-        totalDeliveryPartners: partners.length
+        totalDeliveryPartners: partners.length,
+        bestSellingProducts,
+        pending,
+        preparing,
+        outForDelivery,
+        delivered
+    });
+
+});
+app.get("/delivery-earnings/:email", async (req, res) => {
+
+    const { data: orders, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("deliveryPartnerEmail", req.params.email)
+        .eq("status", "Delivered");
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    let totalEarnings = 0;
+    let totalDeliveries = 0;
+    let todayEarnings = 0;
+    let monthEarnings = 0;
+
+    const today = new Date();
+    const todayDate = today.toISOString().split("T")[0];
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    orders.forEach(order => {
+
+        const earning = Number(order.earning || 0);
+
+        totalEarnings += earning;
+        totalDeliveries++;
+
+        if (order.created_at) {
+
+            const orderDate = new Date(order.created_at);
+
+            if (order.created_at.startsWith(todayDate)) {
+                todayEarnings += earning;
+            }
+
+            if (
+                orderDate.getMonth() === currentMonth &&
+                orderDate.getFullYear() === currentYear
+            ) {
+                monthEarnings += earning;
+            }
+        }
+
+    });
+
+    res.json({
+        totalEarnings,
+        totalDeliveries,
+        todayEarnings,
+        monthEarnings
     });
 
 });
