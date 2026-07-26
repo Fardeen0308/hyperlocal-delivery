@@ -752,6 +752,35 @@ app.post("/rate-delivery/:id", async (req, res) => {
 
 });
 
+app.get("/admin-analytics", async (req, res) => {
+
+    const { data: orders } = await supabase
+        .from("orders")
+        .select("grandTotal");
+
+    const { data: customers } = await supabase
+        .from("users")
+        .select("id");
+
+    const { data: partners } = await supabase
+        .from("deliveryPartners")
+        .select("id");
+
+    let revenue = 0;
+
+    orders.forEach(order => {
+        revenue += Number(order.grandTotal || 0);
+    });
+
+    res.json({
+        totalOrders: orders.length,
+        totalRevenue: revenue,
+        totalCustomers: customers.length,
+        totalDeliveryPartners: partners.length
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
