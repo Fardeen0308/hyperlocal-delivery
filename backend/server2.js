@@ -294,26 +294,44 @@ app.post("/login", async (req, res) => {
 
     const { email, password } = req.body;
 
-    const { data, error } = await supabase
+    // Check users table
+    const { data: user } = await supabase
         .from("users")
         .select("*")
         .eq("email", email)
         .eq("password", password)
         .single();
 
-    if (error || !data) {
-        return res.status(401).json({
-            message: "Invalid Email or Password"
+    if (user) {
+        return res.json({
+            message: "Login Successful",
+            user
         });
     }
 
-    res.json({
-        message: "Login Successful",
-        user: data
+    // Check deliveryPartners table
+    const { data: partner } = await supabase
+        .from("deliveryPartners")
+        .select("*")
+        .eq("email", email)
+        .eq("password", password)
+        .single();
+
+    if (partner) {
+        return res.json({
+            message: "Login Successful",
+            user: {
+                ...partner,
+                role: "delivery"
+            }
+        });
+    }
+
+    return res.status(401).json({
+        message: "Invalid Email or Password"
     });
 
 });
-
 app.post("/orders", async (req, res) => {
 
     const deliveryOtp =

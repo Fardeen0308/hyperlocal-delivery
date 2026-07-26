@@ -5,6 +5,11 @@ if (!user) {
     window.location.href = "login.html";
 }
 
+if (user.role !== "Delivery Partner") {
+    alert("Access Denied");
+    window.location.href = "login.html";
+}
+
 async function loadOrders(){
 
     const response = await fetch("https://hyperlocal-backend-84rs.onrender.com/orders");
