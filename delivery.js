@@ -174,30 +174,18 @@ await response.json();
 const user =
 JSON.parse(localStorage.getItem("user"));
 
-let completed = 0;
-let earnings = 0;
+const earningsResponse = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/delivery-earnings/" + user.email
+);
 
-orders.forEach(order=>{
-
-if(
-order.deliveryPartnerEmail === user.email &&
-order.status === "Delivered"
-
-){
-
-completed++;
-
-earnings += 50; // ₹50 per delivery
-
-}
-
-});
+const earningsData = await earningsResponse.json();
 
 document.getElementById("completed").innerHTML =
-completed;
+earningsData.totalDeliveries;
 
 document.getElementById("earnings").innerHTML =
-"₹" + earnings;
+"₹" + earningsData.totalEarnings;
+
 const history = document.getElementById("history");
 
 history.innerHTML = "";
@@ -213,7 +201,7 @@ orders.forEach(order => {
         <div class="card">
             <h3>${order.customerName}</h3>
             <p>${order.address}</p>
-            <p>Earned ₹50</p>
+            <p>Earned ₹${order.earning}</p>
         </div>
         `;
 
