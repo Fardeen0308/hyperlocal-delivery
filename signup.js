@@ -20,7 +20,6 @@ async function signup() {
     name,
     email,
     password,
-    role: document.getElementById("role").value
 })
         }
     );
