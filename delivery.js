@@ -5,7 +5,7 @@ if (!user) {
     window.location.href = "login.html";
 }
 
-if (user.role !== "Delivery Partner") {
+if (user.role !== "delivery") {
     alert("Access Denied");
     window.location.href = "login.html";
 }
