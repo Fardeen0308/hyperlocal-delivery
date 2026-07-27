@@ -1,5 +1,11 @@
 const user = JSON.parse(localStorage.getItem("user"));
 
+if (!user || user.role !== "customer") {
+    alert("Access Denied");
+    window.location.href = "login.html";
+}
+const user = JSON.parse(localStorage.getItem("user"));
+
 if (!user) {
     window.location.href = "login.html";
 }
