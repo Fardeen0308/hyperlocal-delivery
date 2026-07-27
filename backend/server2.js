@@ -1,4 +1,5 @@
 require("dotenv").config();
+const bcrypt = require("bcrypt");
 const razorpay = require("./razorpay");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
@@ -265,16 +266,20 @@ app.post("/signup", async (req, res) => {
 
     const { name, email, password } = req.body;
 
-    const { data, error } = await supabase
+        const hashedPassword = await 
+        bcrypt.hash(password, 10);
+
+         const { data, error } = await supabase
         .from("users")
-        .insert([
-            {
-                name,
-                email,
-                password,
-                role: "customer"
-            }
-        ])
+
+.insert([
+{
+    name,
+    email,
+    password: hashedPassword,
+    role: "customer"
+}
+])
         .select();
 
     if (error) {
@@ -299,14 +304,18 @@ app.post("/login", async (req, res) => {
         .from("users")
         .select("*")
         .eq("email", email)
-        .eq("password", password)
         .single();
 
     if (user) {
-        return res.json({
-            message: "Login Successful",
-            user
-        });
+
+        const match = await bcrypt.compare(password, user.password);
+
+        if (match) {
+            return res.json({
+                message: "Login Successful",
+                user
+            });
+        }
     }
 
     // Check deliveryPartners table
@@ -314,17 +323,21 @@ app.post("/login", async (req, res) => {
         .from("deliveryPartners")
         .select("*")
         .eq("email", email)
-        .eq("password", password)
         .single();
 
     if (partner) {
-        return res.json({
-            message: "Login Successful",
-            user: {
-                ...partner,
-                role: "delivery"
-            }
-        });
+
+        const match = await bcrypt.compare(password, partner.password);
+
+        if (match) {
+            return res.json({
+                message: "Login Successful",
+                user: {
+                    ...partner,
+                    role: "delivery"
+                }
+            });
+        }
     }
 
     return res.status(401).json({
