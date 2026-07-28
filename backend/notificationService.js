@@ -7,23 +7,19 @@ admin.initializeApp({
 });
 
 async function sendNotification(token, title, body) {
-
-    const message = {
-        notification: {
-            title,
-            body
-        },
-        token
-    };
-
     try {
-        await admin.messaging().send(message);
-        console.log("Notification sent successfully");
+        await admin.messaging().send({
+            token,
+            notification: {
+                title,
+                body
+            }
+        });
+
+        console.log("Notification Sent");
     } catch (err) {
-        console.error(err);
+        console.log(err);
     }
 }
 
-module.exports = {
-    sendNotification
-};
+module.exports = sendNotification;

@@ -1,4 +1,5 @@
 require("dotenv").config();
+const sendNotification = require("./notificationService");
 const bcrypt = require("bcrypt");
 const razorpay = require("./razorpay");
 const cloudinary = require("cloudinary").v2;
@@ -376,13 +377,22 @@ grandTotal: req.body.grandTotal,
             message: error.message
         });
     }
-   console.log("Before sendNotification");
+   
 
-await sendNotification(
-    req.body.email,
-    "📦 Order Confirmed",
-    "Your order has been placed successfully."
-);
+const { data: user } = await supabase
+    .from("users")
+    .select("fcmToken")
+    .eq("email", req.body.email)
+    .single();
+
+if (user && user.fcmToken) {
+    await sendNotification(
+        user.fcmToken,
+        "📦 Order Confirmed",
+        "Your order has been placed successfully."
+    );
+}
+
 
 console.log("After sendNotification");
 
