@@ -914,6 +914,33 @@ app.get("/delivery-earnings/:email", async (req, res) => {
 
 });
 
+app.post("/save-fcm-token", async (req, res) => {
+
+    const { email, role, token } = req.body;
+
+    let table = role === "delivery"
+        ? "deliveryPartners"
+        : "users";
+
+    const { error } = await supabase
+        .from(table)
+        .update({
+            fcmToken: token
+        })
+        .eq("email", email);
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "FCM Token Saved"
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
