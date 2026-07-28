@@ -1,20 +1,18 @@
-const admin = require("firebase-admin");
-
+const { initializeApp, cert } = require("firebase-admin/app");
+const { getMessaging } = require("firebase-admin/messaging");
 const fs = require("fs");
 
 const serviceAccount = JSON.parse(
     fs.readFileSync("/etc/secrets/firebase-service-account.json", "utf8")
 );
 
-console.log(admin);
-console.log(typeof admin.credential);
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+initializeApp({
+    credential: cert(serviceAccount)
 });
 
 async function sendNotification(token, title, body) {
     try {
-        await admin.messaging().send({
+        await getMessaging().send({
             token,
             notification: {
                 title,
@@ -22,7 +20,7 @@ async function sendNotification(token, title, body) {
             }
         });
 
-        console.log("Notification Sent");
+        console.log("✅ Notification Sent");
     } catch (err) {
         console.log(err);
     }
