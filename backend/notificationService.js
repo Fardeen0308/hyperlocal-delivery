@@ -6,6 +6,8 @@ const serviceAccount = JSON.parse(
     fs.readFileSync("/etc/secrets/firebase-service-account.json", "utf8")
 );
 
+console.log(admin);
+console.log(typeof admin.credential);
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
