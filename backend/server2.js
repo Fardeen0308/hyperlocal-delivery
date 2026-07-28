@@ -30,23 +30,6 @@ const upload = multer({
     dest: "uploads/"
 });
 
-async function sendNotification(email, title, message) {
-
-    const { data, error } = await supabase
-        .from("notifications")
-        .insert([{
-            email,
-            title,
-            message,
-            isRead: false
-        }]);
-
-    console.log("Notification Data:", data);
-    console.log("Notification Error:", error);
-
-}
-
-
 
 app.get("/", (req, res) => {
     res.send("HyperLocal Backend Running with Supabase 🚀");
