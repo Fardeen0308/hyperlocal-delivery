@@ -22,8 +22,11 @@ async function sendNotification(token, title, body) {
 
         console.log("✅ Notification Sent");
     } catch (err) {
-        console.log(err);
-    }
+    console.error("Firebase send error:");
+    console.error(err.code);
+    console.error(err.message);
+    console.error(err);
+}
 }
 
 module.exports = sendNotification;
