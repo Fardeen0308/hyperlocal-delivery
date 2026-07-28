@@ -15,6 +15,27 @@ async function requestPermission() {
 
         console.log("FCM Token:", token);
 
+        const user = JSON.parse(localStorage.getItem("user"));
+
+if (user) {
+
+    await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/save-fcm-token",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: user.email,
+                role: user.role,
+                token: token
+            })
+        }
+    );
+
+}
+
     } else {
 
         alert("Notification permission denied.");
