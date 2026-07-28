@@ -1,6 +1,7 @@
 import { messaging } from "./firebase.js";
 import {
-    getToken
+    getToken,
+    onMessage
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js";
 
 async function requestPermission() {
@@ -45,3 +46,15 @@ if (user) {
 }
 
 requestPermission();
+
+onMessage(messaging, (payload) => {
+    console.log("Message received:", payload);
+
+    new Notification(
+        payload.notification.title,
+        {
+            body: payload.notification.body,
+            icon: "/logo.png"
+        }
+    );
+});
