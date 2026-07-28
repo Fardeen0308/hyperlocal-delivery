@@ -10,10 +10,14 @@ async function requestPermission() {
 
     if (permission === "granted") {
 
-        const token = await getToken(messaging, {
-            vapidKey: "BIqCAcR_wd3f_-5F125DQxIQ6r_4PS1bINZC6roCYJD1V6mAQPqm2askTVjgpndaD0DpwCom9BUK5FWcHaL2gQQ"
-        });
+        const registration = await navigator.serviceWorker.register(
+    "/firebase-messaging-sw.js"
+);
 
+const token = await getToken(messaging, {
+    vapidKey: "BIqCAcR_wd3f_-5F125DQxIQ6r_4PS1bINZC6roCYJD1V6mAQPqm2askTVjgpndaD0DpwCom9BUK5FWcHaL2gQQ",
+    serviceWorkerRegistration: registration
+});
         console.log("FCM Token:", token);
 
         const user = JSON.parse(localStorage.getItem("user"));
