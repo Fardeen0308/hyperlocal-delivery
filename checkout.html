@@ -32,6 +32,19 @@ UPI<br><br>
 <input type="radio" name="payment" value="Card">
 Credit/Debit Card<br><br>
 
+<h3>Apply Coupon</h3>
+
+<input
+type="text"
+id="couponCode"
+placeholder="Enter Coupon Code">
+
+<button onclick="applyCoupon()">
+Apply Coupon
+</button>
+
+<p id="couponMessage"></p>
+
 
     <button onclick="placeOrder()">
         Place Order
@@ -45,9 +58,70 @@ Credit/Debit Card<br><br>
 
     const user = JSON.parse(localStorage.getItem("user"));
 
+    let discount = 0;
+let appliedCoupon = null;
+
 if (!user) {
     window.location.href = "login.html";
 }
+
+async function applyCoupon(){
+
+    let code =
+    document.getElementById("couponCode").value;
+
+    let products =
+    JSON.parse(localStorage.getItem("cart")) || [];
+
+    const buyNowProduct =
+    JSON.parse(localStorage.getItem("buyNowProduct"));
+
+    if(buyNowProduct){
+        products=[buyNowProduct];
+    }
+
+    let total=0;
+
+    products.forEach(product=>{
+        total+=Number(product.price)*(product.quantity||1);
+    });
+
+    const res = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/validate-coupon",
+    {
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+            code,
+            amount:total
+        })
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+
+        discount=data.discount;
+        appliedCoupon=code;
+
+        document.getElementById("couponMessage")
+        .innerHTML=
+        "✅ Coupon Applied. Discount ₹"+discount;
+
+    }else{
+
+        discount=0;
+        appliedCoupon=null;
+
+        document.getElementById("couponMessage")
+        .innerHTML=data.message;
+
+    }
+
+}
+
 async function placeOrder() {
 
     let customerName =
@@ -78,7 +152,6 @@ let delivery = 40;
 
 let gst = total * 0.05;
 
-let discount = 0;
 
 let grandTotal = total + delivery + gst - discount;
 
