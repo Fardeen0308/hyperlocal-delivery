@@ -211,7 +211,8 @@ product.reviews.reduce((sum, review) => sum + Number(review.rating), 0)
 '${product.name}',
 '${product.price}',
 '${product.image}'
-)
+)">
+⚡ Buy Now
 </button>
 
 <button onclick="event.stopPropagation();addToWishlist('${product.name}','${product.price}','${product.image}')">
@@ -239,7 +240,14 @@ function filterCategory(category) {
     products.forEach(product => {
 
         container.innerHTML += `
-        <div class="card">
+        <div class="card"
+onclick="openProduct(
+'${product.id}',
+'${product.name}',
+'${product.price}',
+'${product.image}',
+'${product.category}'
+)">
 
             <img src="${product.image}"
                  width="200"
@@ -410,9 +418,8 @@ function updateCartCount(){
     let cart =
     JSON.parse(localStorage.getItem("cart")) || [];
 
-    document.getElementById("cartButton").innerText =
-    "🛒 Cart (" + cart.length + ")";
-
+   document.getElementById("cartButton").innerText =
+cart.length;
 }
 
 updateCartCount();
