@@ -88,13 +88,24 @@ function addToCart(id, name, price, image) {
     let cart =
     JSON.parse(localStorage.getItem("cart")) || [];
 
-    cart.push({
-        id: id,
-        name: name,
-        price: price,
-        image: image,
-        quantity: 1
-    });
+    let existingProduct =
+    cart.find(item => item.id === id);
+
+    if (existingProduct) {
+
+        existingProduct.quantity++;
+
+    } else {
+
+        cart.push({
+            id: id,
+            name: name,
+            price: price,
+            image: image,
+            quantity: 1
+        });
+
+    }
 
     localStorage.setItem(
         "cart",
@@ -102,6 +113,7 @@ function addToCart(id, name, price, image) {
     );
 
     alert("Added To Cart");
+
     updateCartCount();
 }
 
