@@ -43,8 +43,7 @@
 <h3 id="discount">
 Discount: ₹0
 </h3>
-    <button>Proceed To Checkout</button>
-</a>
+ 
 <script>
 
     const user = JSON.parse(localStorage.getItem("user"));
@@ -81,7 +80,11 @@ document.getElementById("total").innerText =
 
 let gst = total * 0.05;
 
-let grandTotal = total + delivery + gst;
+let discount =
+Number(localStorage.getItem("discount")) || 0;
+
+let grandTotal =
+total + delivery + gst - discount;
 
 document.getElementById("subtotal").innerHTML =
 "Subtotal : ₹" + total;
@@ -130,37 +133,50 @@ function decreaseQty(index) {
     location.reload();
 }
 
-let discount = 0;
 
-function applyCoupon() {
 
-    let code =
-    document.getElementById("coupon")
-    .value
-    .toUpperCase();
+async function applyCoupon() {
 
-    if(code === "WELCOME50"){
-        discount = 50;
-    }
-    else if(code === "SAVE100"){
-        discount = 100;
-    }
-    else{
-        alert("Invalid Coupon");
+    let code = document.getElementById("coupon").value;
+
+    const res = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/validate-coupon",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                code,
+                amount: total
+            })
+        }
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
+        alert(data.message);
         return;
     }
 
+    discount = data.discount;
+
+    localStorage.setItem("discount", discount);
+
     document.getElementById("discount").innerText =
-    "Discount: ₹" + discount;
+        "Discount: ₹" + discount;
 
     let delivery = 40;
     let gst = total * 0.05;
 
     let grandTotal =
-    total + delivery + gst - discount;
+        total + delivery + gst - discount;
 
     document.getElementById("grandTotal").innerText =
-    "Grand Total: ₹" + grandTotal.toFixed(2);
+        "Grand Total: ₹" + grandTotal.toFixed(2);
+
+    alert("✅ Coupon Applied Successfully");
 }
 </script>
 
