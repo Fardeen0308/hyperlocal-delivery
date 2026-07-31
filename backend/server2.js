@@ -934,6 +934,119 @@ app.post("/save-fcm-token", async (req, res) => {
 
 });
 
+app.post("/coupons", async (req, res) => {
+
+    const { code, discount, type, minOrder, expiry } = req.body;
+
+    const { data, error } = await supabase
+        .from("coupons")
+        .insert([{
+            code,
+            discount,
+            type,
+            minOrder,
+            expiry,
+            active: true
+        }])
+        .select();
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Coupon Added Successfully",
+        coupon: data
+    });
+
+});
+
+app.get("/coupons", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .order("id", { ascending: false });
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json(data);
+
+});
+
+app.delete("/coupons/:id", async (req, res) => {
+
+    const { error } = await supabase
+        .from("coupons")
+        .delete()
+        .eq("id", req.params.id);
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Coupon Deleted Successfully"
+    });
+
+});
+
+app.post("/validate-coupon", async (req, res) => {
+
+    const { code, amount } = req.body;
+
+    const { data: coupon, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", code)
+        .eq("active", true)
+        .single();
+
+    if (error || !coupon) {
+        return res.json({
+            success: false,
+            message: "Invalid Coupon"
+        });
+    }
+
+    if (new Date(coupon.expiry) < new Date()) {
+        return res.json({
+            success: false,
+            message: "Coupon Expired"
+        });
+    }
+
+    if (Number(amount) < Number(coupon.minOrder)) {
+        return res.json({
+            success: false,
+            message: `Minimum order ₹${coupon.minOrder}`
+        });
+    }
+
+    let discountAmount = 0;
+
+    if (coupon.type === "flat") {
+        discountAmount = Number(coupon.discount);
+    } else {
+        discountAmount =
+            Number(amount) * Number(coupon.discount) / 100;
+    }
+
+    res.json({
+        success: true,
+        discount: discountAmount
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
