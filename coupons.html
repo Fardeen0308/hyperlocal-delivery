@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupons - HyperLocal Admin</title>
+
+    <link rel="stylesheet" href="f.css">
+</head>
+<body>
+
+    <div class="container">
+
+        <h1>🎟️ Coupon Management</h1>
+
+        <div class="form-box">
+
+            <input
+                type="text"
+                id="code"
+                placeholder="Coupon Code">
+
+            <input
+                type="number"
+                id="discount"
+                placeholder="Discount">
+
+            <select id="type">
+                <option value="flat">Flat ₹</option>
+                <option value="percent">Percentage %</option>
+            </select>
+
+            <input
+                type="number"
+                id="minOrder"
+                placeholder="Minimum Order">
+
+            <input
+                type="date"
+                id="expiry">
+
+            <button onclick="addCoupon()">
+                Add Coupon
+            </button>
+
+        </div>
+
+        <h2>Available Coupons</h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Code</th>
+                    <th>Discount</th>
+                    <th>Type</th>
+                    <th>Min Order</th>
+                    <th>Expiry</th>
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="couponTable">
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <script src="coupons.js"></script>
+
+</body>
+</html>
