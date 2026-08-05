@@ -326,6 +326,30 @@ app.post("/login", async (req, res) => {
         }
     }
 
+    // Check admins table
+const { data: admin } = await supabase
+    .from("admins")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+if (admin) {
+
+    // Temporary plain-text password check
+    if (password === admin.password) {
+
+        return res.json({
+            message: "Login Successful",
+            user: {
+                ...admin,
+                role: "admin"
+            }
+        });
+
+    }
+
+}
+
     return res.status(401).json({
         message: "Invalid Email or Password"
     });
