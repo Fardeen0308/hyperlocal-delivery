@@ -43,7 +43,7 @@ deliveryPartners.forEach(partner => {
 });
 
 document.getElementById("totalRevenue").innerText =
-"₹" + revenue;
+"₹" + revenue.toFixed(2);
 
 document.getElementById("deliveredOrders").innerText =
 delivered;
