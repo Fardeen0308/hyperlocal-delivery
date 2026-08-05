@@ -6,6 +6,30 @@
 </head>
 <body>
 
+<div class="admin-layout">
+
+    <div class="sidebar">
+
+        <h2>🛵 HyperLocal</h2>
+
+        <a href="admin-dashboard.html">📊 Dashboard</a>
+
+        <a href="products.html">🛍 Products</a>
+
+        <a href="orders-admin.html">📦 Orders</a>
+
+        <a href="coupons.html">🎟 Coupons</a>
+
+        <a href="delivery.html">🛵 Delivery</a>
+
+        <a href="index.html">🏠 Website</a>
+
+        <a href="admin.html">🚪 Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
 <h1>📊 Admin Analytics</h1>
 
 <div class="dashboard">
@@ -84,8 +108,7 @@ async function loadAnalytics(){
     document.getElementById("partners").innerHTML =
     data.totalDeliveryPartners;
 
-}
-let html = "";
+    let html = "";
 
 data.bestSellingProducts.forEach(product => {
 
@@ -110,10 +133,12 @@ data.outForDelivery;
 
 document.getElementById("delivered").innerHTML =
 data.delivered;
+}
 
 loadAnalytics();
 
 </script>
+</div>
 <script src="admin.js"></script>
 </body>
 </html>
