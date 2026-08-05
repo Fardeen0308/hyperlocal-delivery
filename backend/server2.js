@@ -360,6 +360,28 @@ grandTotal: req.body.grandTotal,
             message: error.message
         });
     }
+
+    for (const product of req.body.products) {
+
+    const { data: dbProduct } = await supabase
+        .from("products")
+        .select("stock, sold")
+        .eq("id", product.id)
+        .single();
+
+    if (dbProduct) {
+
+        await supabase
+            .from("products")
+            .update({
+                stock: Number(dbProduct.stock) - Number(product.quantity || 1),
+                sold: Number(dbProduct.sold || 0) + Number(product.quantity || 1)
+            })
+            .eq("id", product.id);
+
+    }
+
+}
    
 
 const { data: user } = await supabase

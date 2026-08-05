@@ -83,13 +83,18 @@ if (!user) {
 }
 
 
-function addToCart(id, name, price, image) {
+function addToCart(id, name, price, image, stock) {
 
     let cart =
     JSON.parse(localStorage.getItem("cart")) || [];
 
     let existingProduct =
     cart.find(item => item.id === id);
+
+    if (Number(stock) <= 0) {
+    alert("❌ Product is Out of Stock");
+    return;
+}
 
     if (existingProduct) {
 
@@ -214,7 +219,7 @@ product.reviews.reduce((sum, review) => sum + Number(review.rating), 0)
 </div>
 
 
-<button onclick="event.stopPropagation();addToCart('${product.id}','${product.name}','${product.price}','${product.image}')">
+<button onclick="event.stopPropagation();addToCart('${product.id}','${product.name}','${product.price}','${product.image}' , '${product.stock}')">
 🛒 Add To Cart
 </button>
 
