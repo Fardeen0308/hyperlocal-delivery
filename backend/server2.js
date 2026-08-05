@@ -325,7 +325,7 @@ app.post("/login", async (req, res) => {
             });
         }
     }
-
+console.log("Login Email:", email);
     // Check admins table
 const { data: admin } = await supabase
     .from("admins")
