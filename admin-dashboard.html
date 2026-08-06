@@ -100,7 +100,7 @@ async function loadAnalytics(){
     data.totalOrders;
 
     document.getElementById("revenue").innerHTML =
-    "₹" + data.totalRevenue;
+"₹" + Number(data.totalRevenue).toFixed(2);
 
     document.getElementById("customers").innerHTML =
     data.totalCustomers;
