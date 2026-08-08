@@ -517,15 +517,32 @@ app.put("/orders/:id", async (req, res) => {
     // If delivered, make the partner available again
     if (req.body.status === "Delivered" && order.deliveryPartnerEmail) {
 
-        await supabase
-            .from("deliveryPartners")
-            .update({
-                status: "Available"
-            })
-            .eq("email", order.deliveryPartnerEmail);
+    // Get the order details
+    const { data: deliveredOrder } = await supabase
+        .from("orders")
+        .select("earning")
+        .eq("id", req.params.id)
+        .single();
 
-    }
+    // Get current delivery partner stats
+    const { data: partner } = await supabase
+        .from("deliveryPartners")
+        .select("totalDeliveries,totalEarnings")
+        .eq("email", order.deliveryPartnerEmail)
+        .single();
 
+    await supabase
+        .from("deliveryPartners")
+        .update({
+            status: "Available",
+            totalDeliveries: (partner.totalDeliveries || 0) + 1,
+            totalEarnings:
+                (partner.totalEarnings || 0) +
+                (deliveredOrder.earning || 0)
+        })
+        .eq("email", order.deliveryPartnerEmail);
+
+}
     res.json({
         message: "Order Updated Successfully"
     });

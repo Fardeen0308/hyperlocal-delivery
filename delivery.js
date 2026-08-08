@@ -13,6 +13,18 @@ async function loadPartners() {
 
     const partners = await response.json();
 
+    document.getElementById("totalPartners").innerText =
+partners.length;
+
+document.getElementById("availablePartners").innerText =
+partners.filter(p => p.status === "Available").length;
+
+document.getElementById("busyPartners").innerText =
+partners.filter(p => p.status === "Busy").length;
+
+document.getElementById("offlinePartners").innerText =
+partners.filter(p => p.status === "Offline").length;
+
     const search = document
         .getElementById("search")
         .value
@@ -36,6 +48,10 @@ async function loadPartners() {
                 <p>📧 ${partner.email}</p>
 
                 <p>📱 ${partner.phone}</p>
+
+                <p>📦 Deliveries: ${partner.totalDeliveries || 0}</p>
+
+<p>💰 Earnings: ₹${partner.totalEarnings || 0}</p>
 
                 <p>Status</p>
 
