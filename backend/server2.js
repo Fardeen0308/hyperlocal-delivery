@@ -574,6 +574,27 @@ app.get("/delivery-partners", async (req, res) => {
 
 });
 
+app.delete("/delivery-partners/:id", async (req, res) => {
+
+    const { id } = req.params;
+
+    const { error } = await supabase
+        .from("deliveryPartners")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Delivery Partner Deleted Successfully"
+    });
+
+});
+
 app.put("/assign-delivery/:id", async (req, res) => {
 
     const { error } = await supabase

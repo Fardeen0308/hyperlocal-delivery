@@ -256,3 +256,76 @@ function logout() {
     alert("Logged out successfully");
     window.location.href = "login.html";
 }
+
+const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user || user.role !== "admin") {
+    alert("Access Denied");
+    window.location.href = "login.html";
+}
+
+async function loadPartners() {
+
+    const response = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/delivery-partners"
+    );
+
+    const partners = await response.json();
+
+    const search = document
+        .getElementById("search")
+        .value
+        .toLowerCase();
+
+    const container = document.getElementById("partners");
+
+    container.innerHTML = "";
+
+    partners
+    .filter(partner =>
+        partner.name.toLowerCase().includes(search)
+    )
+    .forEach(partner => {
+
+        container.innerHTML += `
+        <div class="card">
+
+            <h2>${partner.name}</h2>
+
+            <p>📧 ${partner.email}</p>
+
+            <p>📱 ${partner.phone}</p>
+
+            <p>🟢 Status: ${partner.status}</p>
+
+            <button onclick="deletePartner('${partner.id}')">
+                ❌ Delete
+            </button>
+
+        </div>
+        `;
+
+    });
+
+}
+
+async function deletePartner(id) {
+
+    if (!confirm("Delete this delivery partner?")) return;
+
+    const response = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/delivery-partners/" + id,
+        {
+            method: "DELETE"
+        }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+
+    loadPartners();
+
+}
+
+loadPartners();
