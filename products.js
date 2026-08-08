@@ -66,10 +66,10 @@ async function deleteProduct(id) {
 
 }
 
-function editProduct(id) {
+function editProduct(id){
 
-    alert("Edit feature will be added next.");
+    localStorage.setItem("editProductId", id);
+
+    window.location.href = "edit-product.html";
 
 }
-
-loadProducts();
