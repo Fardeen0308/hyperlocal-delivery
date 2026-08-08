@@ -296,8 +296,21 @@ async function loadPartners() {
 
             <p>📱 ${partner.phone}</p>
 
-            <p>🟢 Status: ${partner.status}</p>
+            <p>Status</p>
 
+<select id="status-${partner.id}">
+    <option value="Available" ${partner.status === "Available" ? "selected" : ""}>Available</option>
+
+    <option value="Busy" ${partner.status === "Busy" ? "selected" : ""}>Busy</option>
+
+    <option value="Offline" ${partner.status === "Offline" ? "selected" : ""}>Offline</option>
+</select>
+
+<br><br>
+
+<button onclick="updateStatus('${partner.email}','${partner.id}')">
+💾 Update Status
+</button>
             <button onclick="deletePartner('${partner.id}')">
                 ❌ Delete
             </button>
@@ -329,3 +342,30 @@ async function deletePartner(id) {
 }
 
 loadPartners();
+
+async function updateStatus(email, id){
+
+    const status =
+    document.getElementById("status-" + id).value;
+
+    const response = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/delivery-partners/status",
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email,
+                status
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+
+    loadPartners();
+
+}
