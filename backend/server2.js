@@ -1131,6 +1131,85 @@ app.post("/validate-coupon", async (req, res) => {
 
 });
 
+app.get("/admin-analytics", async (req, res) => {
+
+    const { data: orders } = await supabase
+        .from("orders")
+        .select("*");
+
+    const { data: partners } = await supabase
+        .from("deliveryPartners")
+        .select("*");
+
+    const { data: users } = await supabase
+        .from("users")
+        .select("*");
+
+    let totalRevenue = 0;
+
+    let pending = 0;
+    let preparing = 0;
+    let outForDelivery = 0;
+    let delivered = 0;
+
+    let productCount = {};
+
+    orders.forEach(order => {
+
+        totalRevenue += Number(order.grandTotal || 0);
+
+        if(order.status === "Pending") pending++;
+
+        if(order.status === "Preparing") preparing++;
+
+        if(order.status === "Out for Delivery") outForDelivery++;
+
+        if(order.status === "Delivered") delivered++;
+
+        if(order.items){
+
+            order.items.forEach(item=>{
+
+                productCount[item.name] =
+                (productCount[item.name] || 0)+1;
+
+            });
+
+        }
+
+    });
+
+    const bestSellingProducts =
+    Object.entries(productCount)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,5);
+
+    res.json({
+
+        totalOrders: orders.length,
+
+        totalRevenue,
+
+        totalCustomers:
+        users.filter(u=>u.role==="customer").length,
+
+        totalDeliveryPartners:
+        partners.length,
+
+        pending,
+
+        preparing,
+
+        outForDelivery,
+
+        delivered,
+
+        bestSellingProducts
+
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
