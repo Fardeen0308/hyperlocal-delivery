@@ -3,6 +3,8 @@
 <head>
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="f.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -66,6 +68,16 @@
 <h3>🟡 Pending</h3>
 <h1 id="pending">0</h1>
 </div>
+
+<h2>📊 Revenue Analytics</h2>
+
+<canvas id="ordersChart" height="120"></canvas>
+
+<br><br>
+
+<h2>🥧 Order Status</h2>
+
+<canvas id="statusChart" height="120"></canvas>
 
 <div class="card">
 <h3>👨‍🍳 Preparing</h3>
@@ -133,9 +145,56 @@ data.outForDelivery;
 
 document.getElementById("delivered").innerHTML =
 data.delivered;
+
+// Revenue Chart
+const ordersCtx = document.getElementById("ordersChart").getContext("2d");
+
+if(window.ordersChart){
+    window.ordersChart.destroy();
+}
+
+window.ordersChart = new Chart(ordersCtx,{
+    type:"bar",
+    data:{
+        labels:["Orders","Revenue"],
+        datasets:[{
+            label:"Analytics",
+            data:[data.totalOrders,data.totalRevenue],
+            borderWidth:1
+        }]
+    }
+});
+
+// Status Chart
+const statusCtx = document.getElementById("statusChart").getContext("2d");
+
+if(window.statusChart){
+    window.statusChart.destroy();
+}
+
+window.statusChart = new Chart(statusCtx,{
+    type:"pie",
+    data:{
+        labels:[
+            "Pending",
+            "Preparing",
+            "Out for Delivery",
+            "Delivered"
+        ],
+        datasets:[{
+            data:[
+                data.pending,
+                data.preparing,
+                data.outForDelivery,
+                data.delivered
+            ]
+        }]
+    }
+});
 }
 
 loadAnalytics();
+setInterval(loadAnalytics,10000);
 
 </script>
 </div>
