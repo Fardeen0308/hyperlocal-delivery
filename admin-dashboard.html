@@ -148,7 +148,7 @@ data.delivered;
 // Revenue Chart
 const ordersCtx = document.getElementById("ordersChart").getContext("2d");
 
-if(window.ordersChart){
+if (window.ordersChart instanceof Chart) {
     window.ordersChart.destroy();
 }
 
@@ -167,7 +167,7 @@ window.ordersChart = new Chart(ordersCtx,{
 // Status Chart
 const statusCtx = document.getElementById("statusChart").getContext("2d");
 
-if(window.statusChart){
+if (window.statusChart instanceof Chart) {
     window.statusChart.destroy();
 }
 
@@ -197,6 +197,5 @@ setInterval(loadAnalytics,10000);
 
 </script>
 </div>
-<script src="admin.js"></script>
 </body>
 </html>
