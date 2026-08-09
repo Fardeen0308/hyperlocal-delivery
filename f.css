@@ -563,3 +563,18 @@ canvas{
 .card{
     padding:20px;
 }
+
+.chart-container{
+    width:90%;
+    max-width:900px;
+    margin:30px auto;
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.1);
+}
+
+.chart-container canvas{
+    width:100% !important;
+    height:400px !important;
+}
