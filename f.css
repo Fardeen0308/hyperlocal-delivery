@@ -552,3 +552,14 @@ tr:hover{
     flex:1;
     padding:20px;
 }
+
+canvas{
+    width:100% !important;
+    max-width:700px;
+    margin:auto;
+    display:block;
+}
+
+.card{
+    padding:20px;
+}
