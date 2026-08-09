@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="f.css">
+    <link rel="stylesheet" href="admin.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -32,33 +32,65 @@
 
     <div class="main-content">
 
-<h1>📊 Admin Analytics</h1>
+<div class="dashboard-header">
+    <div>
+        <h1>👋 Welcome, Admin</h1>
+        <p>Monitor your HyperLocal business in real time.</p>
+    </div>
 
+    <div class="live-status">
+        🟢 Live
+    </div>
+</div>
 <div class="dashboard">
 
-    <div class="card">
-        <h2>📦 Orders</h2>
-        <h1 id="orders">0</h1>
-    </div>
+<div class="card stat-card">
+    <div class="icon">📦</div>
+    <h3>Total Orders</h3>
+    <h1 id="orders">0</h1>
+    <p>Total Orders</p>
+</div>
 
-    <div class="card">
-        <h2>💰 Revenue</h2>
-        <h1 id="revenue">₹0</h1>
-    </div>
+<div class="card stat-card">
+    <div class="icon">💰</div>
+    <h3>Total Revenue</h3>
+    <h1 id="revenue">₹0</h1>
+    <p>Overall Earnings</p>
+</div>
 
-    <div class="card">
-        <h2>👥 Customers</h2>
-        <h1 id="customers">0</h1>
-    </div>
+<div class="card stat-card">
+    <div class="icon">👥</div>
+    <h3>Customers</h3>
+    <h1 id="customers">0</h1>
+    <p>Registered Users</p>
+</div>
 
-    <div class="card">
-        <h2>🚚 Delivery Partners</h2>
-        <h1 id="partners">0</h1>
-    </div>
+<div class="card stat-card">
+    <div class="icon">🚚</div>
+    <h3>Delivery Partners</h3>
+    <h1 id="partners">0</h1>
+    <p>Available Riders</p>
+</div>
 
+</div>
     <h2>🔥 Best Selling Products</h2>
 
-<div id="bestProducts"></div>
+<div class="best-products-card">
+    <table class="best-products-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Product</th>
+                <th>Orders</th>
+            </tr>
+        </thead>
+
+        <tbody id="bestProducts">
+
+        </tbody>
+
+    </table>
+</div>
 
 <h2>📦 Order Status</h2>
 
@@ -86,16 +118,20 @@
 
 </div>
 
-<h2>📊 Revenue Analytics</h2>
+<h2>📊 Analytics</h2>
 
-<div class="chart-container">
-    <canvas id="ordersChart"></canvas>
-</div>
+<div class="charts">
 
-<br><br>
+    <div class="chart-container">
+        <h3>💰 Revenue Analytics</h3>
+        <canvas id="ordersChart"></canvas>
+    </div>
 
-<div class="chart-container">
-    <canvas id="statusChart"></canvas>
+    <div class="chart-container">
+        <h3>🥧 Order Status</h3>
+        <canvas id="statusChart"></canvas>
+    </div>
+
 </div>
 
 <script>
@@ -120,19 +156,26 @@ async function loadAnalytics(){
     document.getElementById("partners").innerHTML =
     data.totalDeliveryPartners;
 
-    let html = "";
+   let html = "";
 
-data.bestSellingProducts.forEach(product => {
+data.bestSellingProducts.forEach((product,index)=>{
 
-    html += `
-        <p>
-            🛍️ ${product[0]} - ${product[1]} Orders
-        </p>
-    `;
+let medal="🥉";
+
+if(index===0) medal="🥇";
+if(index===1) medal="🥈";
+
+html+=`
+<tr>
+<td>${medal}</td>
+<td>${product[0]}</td>
+<td>${product[1]}</td>
+</tr>
+`;
 
 });
 
-document.getElementById("bestProducts").innerHTML = html;
+document.getElementById("bestProducts").innerHTML=html;
 
 document.getElementById("pending").innerHTML =
 data.pending;
