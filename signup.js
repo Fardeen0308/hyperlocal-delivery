@@ -20,6 +20,7 @@ async function signup() {
     name,
     email,
     password,
+    role: "customer"
 })
         }
     );
