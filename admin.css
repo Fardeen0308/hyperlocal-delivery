@@ -135,7 +135,8 @@ body{
     display:grid;
     grid-template-columns:repeat(auto-fit, minmax(500px, 1fr));
     gap:30px;
-    margin-top:30px;
+    margin-top:35px;
+    margin-bottom: 40px;
 }
 
 
@@ -148,15 +149,15 @@ body{
 
 }.chart-container{
     background:#fff;
-    border-radius:20px;
-    padding:30px;
-    min-height:450px;
-    box-shadow:0 10px 25px rgba(0,0,0,.08);
+    border-radius:18px;
+    padding:25px;
+    min-height:420px;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
 }
 
 .chart-container canvas{
     width:100% !important;
-    height:380px !important;
+    height:350px !important;
 }
 
 @media(max-width:900px){
