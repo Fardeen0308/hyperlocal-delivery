@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Admin Orders</title>
-    <link rel="stylesheet" href="f.css">
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body>
 
@@ -24,12 +24,29 @@
 
 <div class="main-content">
 
-<h1>📦 All Orders</h1>
+<h1>📦 Order Management</h1>
 
-<div id="orders"></div>
+<div class="orders-top">
+
+<input
+type="text"
+id="searchOrder"
+placeholder="🔍 Search Customer..."
+onkeyup="searchOrders()">
+
+<select id="statusFilter" onchange="filterOrders()">
+<option value="All">All Orders</option>
+<option value="Pending">Pending</option>
+<option value="Preparing">Preparing</option>
+<option value="Out for Delivery">Out for Delivery</option>
+<option value="Delivered">Delivered</option>
+</select>
 
 </div>
 
+<div id="orders" class="orders-grid"></div>
+
+</div>
 </div>
 
 <script src="orders-admin.js"></script>

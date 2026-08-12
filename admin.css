@@ -364,3 +364,29 @@ body{
     box-shadow:0 5px 15px rgba(0,0,0,.1);
     cursor:pointer;
 }
+
+.orders-top{
+display:flex;
+justify-content:space-between;
+gap:15px;
+margin:20px 0;
+flex-wrap:wrap;
+}
+
+.orders-top input{
+flex:1;
+padding:12px;
+border-radius:10px;
+border:1px solid #ddd;
+}
+
+.orders-top select{
+padding:12px;
+border-radius:10px;
+}
+
+.orders-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
+gap:20px;
+}
