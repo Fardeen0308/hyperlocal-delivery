@@ -47,6 +47,18 @@ async function loadOrders() {
 
     orders.forEach(order => {
 
+        let statusColor = "#f39c12";
+
+if(order.status === "Preparing"){
+    statusColor = "#3498db";
+}
+else if(order.status === "Out for Delivery"){
+    statusColor = "#9b59b6";
+}
+else if(order.status === "Delivered"){
+    statusColor = "#27ae60";
+}
+
         container.innerHTML += `
         <div class="card">
 
@@ -66,7 +78,18 @@ async function loadOrders() {
 
             <h3>Total: ₹${order.grandTotal}</h3>
 
-            <p>Status: <b>${order.status}</b></p>
+            <p>
+Status:
+<span style="
+background:${statusColor};
+color:white;
+padding:6px 12px;
+border-radius:20px;
+font-weight:bold;
+">
+${order.status}
+</span>
+</p>
 
             <button onclick="updateStatus('${order.id}')">
                 Change Status
