@@ -390,3 +390,52 @@ display:grid;
 grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
 gap:20px;
 }
+
+.card{
+background:#fff;
+padding:20px;
+border-radius:15px;
+box-shadow:0 5px 15px rgba(0,0,0,.1);
+margin-bottom:20px;
+}
+
+.card h2{
+margin-bottom:10px;
+}
+
+.card p{
+margin:8px 0;
+font-size:15px;
+}
+
+.card h3{
+color:#27ae60;
+font-size:24px;
+margin:15px 0;
+}
+
+.card button{
+padding:10px 15px;
+margin:5px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.card button:first-of-type{
+background:#3498db;
+color:white;
+}
+
+.card button:nth-of-type(2){
+background:#e74c3c;
+color:white;
+}
+
+.card select{
+padding:10px;
+border-radius:8px;
+margin-top:10px;
+margin-right:10px;
+}
