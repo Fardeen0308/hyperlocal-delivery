@@ -614,38 +614,76 @@ app.delete("/delivery-partners/:id", async (req, res) => {
 
 app.put("/assign-delivery/:id", async (req, res) => {
 
-    const { error } = await supabase
-        .from("orders")
-        .update({
-            deliveryPartnerId: req.body.id,
-            deliveryPartnerName: req.body.name,
-            deliveryPartnerEmail: req.body.email,
-            status: "Out for Delivery"
-        })
-        .eq("id", req.params.id);
-        await supabase
-    .from("deliveryPartners")
-    .update({
-        status:"Busy"
-    })
-    .eq("email", req.body.email);
+    try {
 
-    if (error) {
-        return res.status(500).json({
+        // 1. Get delivery partner
+        const { data: partner, error: partnerError } = await supabase
+            .from("deliveryPartners")
+            .select("*")
+            .eq("email", req.body.email)
+            .single();
+
+        if (partnerError || !partner) {
+            return res.status(404).json({
+                message: "Delivery Partner not found"
+            });
+        }
+
+        // 2. Update order
+        const { error: orderError } = await supabase
+            .from("orders")
+            .update({
+                deliveryPartnerId: partner.id,
+                deliveryPartnerName: partner.name,
+                deliveryPartnerEmail: partner.email,
+                status: "Out for Delivery"
+            })
+            .eq("id", req.params.id);
+
+        if (orderError) {
+            return res.status(500).json({
+                message: orderError.message
+            });
+        }
+
+        // 3. Make partner Busy
+        const { error: busyError } = await supabase
+            .from("deliveryPartners")
+            .update({
+                status: "Busy"
+            })
+            .eq("id", partner.id);
+
+        if (busyError) {
+            console.log("Partner status error:", busyError.message);
+        }
+
+        // 4. Send notification if FCM token exists
+        if (partner.fcmToken) {
+
+            await sendNotification(
+                partner.fcmToken,
+                "🛵 New Delivery",
+                "A new order has been assigned to you."
+            );
+
+        }
+
+        res.json({
+            message: "Delivery Partner Assigned Successfully"
+        });
+
+    } catch (error) {
+
+        console.error("Assign delivery error:", error);
+
+        res.status(500).json({
             message: error.message
         });
+
     }
-await sendNotification(
-    req.body.email,
-    "🛵 New Delivery",
-    "A new order has been assigned to you."
-);
-    res.json({
-        message: "Delivery Partner Assigned Successfully"
-    });
 
 });
-
 app.put("/delivery-partners/status", async (req,res)=>{
 
     const { email, status } = req.body;
@@ -713,67 +751,130 @@ app.get("/location/:email", async (req, res) => {
 
 app.post("/verify-otp/:id", async (req, res) => {
 
-    // Get the order
-    const { data: order, error: fetchError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", req.params.id)
-        .single();
+    try {
 
-    if (fetchError) {
-        return res.status(500).json({
-            success: false,
-            message: fetchError.message
+        // 1. Get order
+        const { data: order, error: fetchError } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("id", req.params.id)
+            .single();
+
+        if (fetchError || !order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            });
+        }
+
+        // 2. Check OTP
+        if (order.deliveryOtp !== req.body.otp) {
+            return res.json({
+                success: false,
+                message: "❌ Invalid OTP"
+            });
+        }
+
+        // 3. Prevent completing the same order twice
+        if (order.status === "Delivered") {
+            return res.json({
+                success: false,
+                message: "This order is already delivered."
+            });
+        }
+
+        // 4. Make sure partner is assigned
+        if (!order.deliveryPartnerEmail) {
+            return res.json({
+                success: false,
+                message: "No delivery partner assigned."
+            });
+        }
+
+        // 5. Get delivery partner
+        const { data: partner, error: partnerError } =
+            await supabase
+                .from("deliveryPartners")
+                .select("*")
+                .eq("email", order.deliveryPartnerEmail)
+                .single();
+
+        if (partnerError || !partner) {
+            return res.status(404).json({
+                success: false,
+                message: "Delivery partner not found."
+            });
+        }
+
+        // 6. Mark order as Delivered
+        const { error: orderError } = await supabase
+            .from("orders")
+            .update({
+                status: "Delivered"
+            })
+            .eq("id", req.params.id);
+
+        if (orderError) {
+            return res.status(500).json({
+                success: false,
+                message: orderError.message
+            });
+        }
+
+        // 7. Get existing earning from order
+        const earning = Number(order.earning || 0);
+
+        // 8. Update delivery partner statistics
+        const totalDeliveries =
+            Number(partner.totalDeliveries || 0) + 1;
+
+        const totalEarnings =
+            Number(partner.totalEarnings || 0) + earning;
+
+        const { error: partnerUpdateError } =
+            await supabase
+                .from("deliveryPartners")
+                .update({
+                    status: "Available",
+                    totalDeliveries: totalDeliveries,
+                    totalEarnings: totalEarnings
+                })
+                .eq("email", order.deliveryPartnerEmail);
+
+        if (partnerUpdateError) {
+            console.log(
+                "Partner update error:",
+                partnerUpdateError.message
+            );
+        }
+
+        // 9. Notify customer
+        console.log(
+            "Order delivered:",
+            order.id
+        );
+
+        // 10. Success
+        res.json({
+            success: true,
+            message: "✅ Delivery Completed Successfully"
         });
-    }
 
-    // Check OTP
-    if (order.deliveryOtp !== req.body.otp) {
-        return res.json({
-            success: false,
-            message: "❌ Invalid OTP"
-        });
-    }
+    } catch (error) {
 
-    // Mark order as delivered
-    const { error } = await supabase
-        .from("orders")
-        .update({
-            status: "Delivered"
-        })
-        .eq("id", req.params.id);
+        console.error(
+            "Verify OTP error:",
+            error
+        );
 
-    if (error) {
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             message: error.message
         });
-    }
-
-    // Make delivery partner available again
-    if (order.deliveryPartnerEmail) {
-
-        await supabase
-            .from("deliveryPartners")
-            .update({
-                status: "Available"
-            })
-            .eq("email", order.deliveryPartnerEmail);
 
     }
-    await sendNotification(
-    order.email,
-    "✅ Order Delivered",
-    "Your order has been delivered successfully."
-);
-
-    res.json({
-        success: true,
-        message: "✅ Delivery Completed Successfully"
-    });
 
 });
-
 app.get("/notifications/:email", async (req, res) => {
 
     const { data, error } = await supabase
