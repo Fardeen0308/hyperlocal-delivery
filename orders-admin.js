@@ -203,3 +203,54 @@ async function start() {
 }
 
 start();
+
+function searchOrders(){
+
+const input = document
+.getElementById("searchOrder")
+.value.toLowerCase();
+
+const cards =
+document.querySelectorAll(".card");
+
+cards.forEach(card=>{
+
+const text =
+card.innerText.toLowerCase();
+
+if(text.includes(input)){
+card.style.display="block";
+}
+else{
+card.style.display="none";
+}
+
+});
+
+}
+
+function filterOrders(){
+
+const status =
+document.getElementById("statusFilter").value;
+
+const cards =
+document.querySelectorAll(".card");
+
+cards.forEach(card=>{
+
+if(status==="All"){
+card.style.display="block";
+return;
+}
+
+if(card.innerText.includes(status)){
+card.style.display="block";
+}
+else{
+card.style.display="none";
+}
+
+});
+
+}
