@@ -1,0 +1,128 @@
+/* =========================================
+   CHECKOUT PAGE
+========================================= */
+
+body {
+    background: #f5f5f5;
+}
+
+/* Header */
+
+body > header {
+    background: white;
+    padding: 22px 35px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+}
+
+body > header h1 {
+    color: #0a8f3d;
+    font-size: 30px;
+}
+
+/* Checkout Form */
+
+.form-box {
+    max-width: 650px;
+    margin: 40px auto 100px;
+    padding: 35px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.10);
+}
+
+/* Inputs */
+
+.form-box input[type="text"],
+.form-box input[type="tel"] {
+    width: 100%;
+    height: 52px;
+    margin-bottom: 18px;
+    padding: 0 16px;
+
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+
+    font-size: 16px;
+    outline: none;
+    transition: .25s;
+}
+
+.form-box input[type="text"]:focus,
+.form-box input[type="tel"]:focus {
+    border-color: #0a8f3d;
+    box-shadow: 0 0 8px rgba(10,143,61,.15);
+}
+
+/* Payment Heading */
+
+.form-box h3 {
+    margin: 15px 0 18px;
+    color: #222;
+    font-size: 20px;
+}
+
+/* Radio Buttons */
+
+.form-box input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    accent-color: #0a8f3d;
+    vertical-align: middle;
+}
+
+/* Place Order */
+
+.form-box button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 15px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #0a8f3d;
+    color: white;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    cursor: pointer;
+    transition: .25s;
+}
+
+.form-box button:hover {
+    background: #087832;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(10,143,61,.25);
+}
+
+/* Mobile */
+
+@media (max-width: 700px) {
+
+    body > header {
+        padding: 18px 20px;
+    }
+
+    body > header h1 {
+        font-size: 25px;
+    }
+
+    .form-box {
+        margin: 25px 12px 90px;
+        padding: 22px;
+        border-radius: 16px;
+    }
+
+    .form-box input[type="text"],
+    .form-box input[type="tel"] {
+        height: 48px;
+        font-size: 15px;
+    }
+
+    .form-box button {
+        font-size: 16px;
+        padding: 14px;
+    }
+}
