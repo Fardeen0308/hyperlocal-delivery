@@ -1,0 +1,261 @@
+/* =========================================
+   ORDERS PAGE
+========================================= */
+
+body {
+    background: #f5f7f6;
+    padding-bottom: 80px;
+}
+
+/* Header */
+
+body > header {
+    background: white;
+    padding: 22px 35px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+}
+
+body > header h1 {
+    color: #0a8f3d;
+    font-size: 30px;
+}
+
+/* Orders Container */
+
+#orders {
+    max-width: 950px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+/* Order Card */
+
+#orders .card {
+    background: white;
+    padding: 25px;
+    margin-bottom: 25px;
+    border-radius: 18px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.08);
+    cursor: default;
+}
+
+#orders .card:hover {
+    transform: none;
+}
+
+#orders .card h3 {
+    color: #222;
+    margin-bottom: 12px;
+}
+
+#orders .card p {
+    margin: 8px 0;
+    color: #555;
+    line-height: 1.5;
+}
+
+/* Total */
+
+#orders .card h3:last-of-type {
+    color: #0a8f3d;
+    font-size: 21px;
+}
+
+/* Delivery OTP */
+
+#orders .card p[style*="color:red"] {
+    background: #fff3f3;
+    border: 1px solid #ffcaca;
+    padding: 12px;
+    border-radius: 10px;
+}
+
+/* Delivery Partner */
+
+#orders .card button {
+    border: none;
+    border-radius: 9px;
+    padding: 10px 16px;
+    margin-top: 10px;
+    background: #0a8f3d;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: .2s;
+}
+
+#orders .card button:hover {
+    transform: translateY(-2px);
+    opacity: .9;
+}
+
+/* Cancel Button */
+
+#orders .card button[onclick*="cancelOrder"] {
+    background: #e53935;
+}
+
+/* Rating */
+
+#orders select {
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 9px;
+    font-size: 15px;
+    margin-top: 8px;
+}
+
+#orders select + button {
+    background: #ff9800;
+    margin-left: 8px;
+}
+
+/* =========================================
+   ORDER TIMELINE
+========================================= */
+
+.timeline {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f8faf9;
+    border-radius: 14px;
+    border-left: 4px solid #d8d8d8;
+}
+
+.timeline p {
+    padding: 10px 15px;
+    color: #999 !important;
+    font-weight: bold;
+    margin: 5px 0 !important;
+}
+
+.timeline p.done {
+    color: #0a8f3d !important;
+}
+
+/* =========================================
+   DELIVERY TRACKING
+========================================= */
+
+body > h2,
+body > h3 {
+    max-width: 950px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+body > h2 {
+    margin-top: 35px;
+    padding: 0 20px;
+}
+
+#eta,
+#distance {
+    padding: 0 20px;
+    margin-top: 12px;
+    color: #555;
+}
+
+/* Map */
+
+#map {
+    max-width: 950px;
+    margin: 20px auto 100px !important;
+    border-radius: 18px !important;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0,0,0,.12);
+}
+
+/* =========================================
+   BOTTOM NAV
+========================================= */
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+
+    background: white;
+
+    display: flex;
+    justify-content: space-around;
+
+    padding: 12px 0;
+
+    box-shadow: 0 -3px 12px rgba(0,0,0,.12);
+
+    z-index: 9999;
+}
+
+.bottom-nav a {
+    text-decoration: none;
+    color: #555;
+    text-align: center;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.bottom-nav a:hover {
+    color: #0a8f3d;
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 700px) {
+
+    body > header {
+        padding: 18px 20px;
+    }
+
+    body > header h1 {
+        font-size: 25px;
+    }
+
+    #orders {
+        padding: 0 12px;
+        margin-top: 20px;
+    }
+
+    #orders .card {
+        padding: 18px;
+        border-radius: 15px;
+    }
+
+    #orders .card h3 {
+        font-size: 18px;
+    }
+
+    #orders .card p {
+        font-size: 14px;
+    }
+
+    .timeline {
+        padding: 12px;
+    }
+
+    #map {
+        height: 300px !important;
+        margin: 15px 12px 100px !important;
+    }
+
+    body > h2,
+    body > h3 {
+        padding: 0 12px;
+    }
+
+    #orders select {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    #orders select + button {
+        margin-left: 0;
+    }
+
+    .bottom-nav a {
+        font-size: 12px;
+    }
+}
