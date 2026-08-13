@@ -550,31 +550,63 @@ app.put("/orders/:id", async (req, res) => {
 });
 app.post("/delivery-partners", async (req, res) => {
 
-    const { data, error } = await supabase
-        .from("deliveryPartners")
-        .insert([{
-            name: req.body.name,
-            email: req.body.email,
-            phone: req.body.phone,
-            vehicle: req.body.vehicle,
-            rating: 5,
-            status: "Available"
-        }])
-        .select();
+    try {
 
-    if (error) {
-        return res.status(500).json({
+        const {
+            name,
+            email,
+            phone,
+            password
+        } = req.body;
+
+        if (!name || !email || !phone || !password) {
+            return res.status(400).json({
+                message: "Please fill all required fields"
+            });
+        }
+
+        // Hash delivery partner password
+        const hashedPassword =
+            await bcrypt.hash(password, 10);
+
+        const { data, error } = await supabase
+            .from("deliveryPartners")
+            .insert([{
+                name: name,
+                email: email,
+                phone: phone,
+                password: hashedPassword,
+                rating: 5,
+                status: "Available",
+                totalDeliveries: 0,
+                totalEarnings: 0
+            }])
+            .select();
+
+        if (error) {
+
+            return res.status(500).json({
+                message: error.message
+            });
+
+        }
+
+        res.json({
+            message: "Delivery Partner Added Successfully",
+            partner: data[0]
+        });
+
+    } catch (error) {
+
+        console.error("Add delivery partner error:", error);
+
+        res.status(500).json({
             message: error.message
         });
+
     }
 
-    res.json({
-        message: "Delivery Partner Added Successfully",
-        partner: data
-    });
-
 });
-
 app.get("/delivery-partners", async (req, res) => {
 
     const { data, error } = await supabase
