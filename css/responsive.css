@@ -1,0 +1,32 @@
+@media(max-width:768px){
+
+.sidebar{
+    width:70px;
+}
+
+.sidebar a{
+    font-size:12px;
+    padding:8px;
+}
+
+.main-content{
+    padding:10px;
+}
+
+.products{
+    grid-template-columns:1fr;
+}
+
+.dashboard{
+    grid-template-columns:1fr;
+}
+
+.form-box{
+    width:90%;
+}
+
+.header input{
+    width:100%;
+}
+
+}
