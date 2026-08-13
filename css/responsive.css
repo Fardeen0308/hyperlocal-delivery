@@ -30,3 +30,60 @@
 }
 
 }
+
+@media(max-width:768px){
+
+.hero{
+    flex-direction:column;
+    text-align:center;
+}
+
+.hero img{
+    width:100%;
+}
+
+.header{
+    flex-direction:column;
+    gap:15px;
+}
+
+.search-box{
+    width:100%;
+    margin:0;
+}
+
+.header-icons{
+    justify-content:center;
+}
+
+.products{
+    grid-template-columns:1fr;
+}
+
+.categories{
+    grid-template-columns:repeat(2,1fr);
+}
+
+.offer-grid{
+    grid-template-columns:1fr;
+}
+
+.feature-grid{
+    grid-template-columns:1fr;
+}
+
+.brand-grid{
+    grid-template-columns:repeat(2,1fr);
+}
+
+.newsletter input{
+    width:100%;
+    margin-bottom:15px;
+}
+
+.newsletter button{
+    width:100%;
+    margin:0;
+}
+
+}

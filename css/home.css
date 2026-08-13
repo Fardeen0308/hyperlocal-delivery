@@ -1,0 +1,379 @@
+/* ===============================
+HOME PAGE
+===============================*/
+
+.hero{
+    max-width:1400px;
+    margin:30px auto;
+    padding:50px;
+    background:linear-gradient(135deg,#00b14f,#16a34a);
+    border-radius:28px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:40px;
+    color:white;
+}
+
+.hero-text{
+    flex:1;
+}
+
+.hero-text h1{
+    font-size:54px;
+    line-height:1.2;
+    margin-bottom:20px;
+}
+
+.hero-text p{
+    font-size:20px;
+    line-height:1.7;
+    margin-bottom:30px;
+}
+
+.hero button{
+    background:white;
+    color:#00b14f;
+    border:none;
+    padding:16px 34px;
+    border-radius:12px;
+    font-size:18px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.hero button:hover{
+    transform:translateY(-4px);
+}
+
+.hero-image img{
+    width:460px;
+    border-radius:22px;
+}
+
+/* =============================== */
+
+.slider{
+    width:1400px;
+    max-width:95%;
+    margin:35px auto;
+}
+
+.slider img{
+    width:100%;
+    height:360px;
+    object-fit:cover;
+    border-radius:24px;
+}
+
+/* =============================== */
+
+.categories{
+    width:1400px;
+    max-width:95%;
+    margin:40px auto;
+
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+
+    gap:25px;
+}
+
+.category{
+    background:white;
+    padding:25px;
+    border-radius:20px;
+    text-align:center;
+    cursor:pointer;
+    transition:.3s;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+
+.category:hover{
+    transform:translateY(-8px);
+}
+
+.category img{
+    width:80px;
+    height:80px;
+}
+
+.category p{
+    margin-top:15px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+/* =============================== */
+
+.offers{
+
+width:1400px;
+max-width:95%;
+
+margin:40px auto;
+
+}
+
+.offers h2{
+
+margin-bottom:25px;
+
+font-size:32px;
+
+}
+
+.offer-grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+
+gap:25px;
+
+}
+
+.offer-card{
+
+background:linear-gradient(135deg,#ff9800,#ff5722);
+
+padding:35px;
+
+border-radius:22px;
+
+color:white;
+
+transition:.3s;
+
+}
+
+.offer-card:hover{
+
+transform:translateY(-8px);
+
+}
+
+.offer-card h3{
+
+font-size:28px;
+
+margin-bottom:15px;
+
+}
+
+/* =============================== */
+
+.product-section,
+.best-section{
+
+width:1400px;
+
+max-width:95%;
+
+margin:50px auto;
+
+}
+
+.product-section h2,
+.best-section h2{
+
+font-size:34px;
+
+margin-bottom:25px;
+
+}
+
+/* =============================== */
+
+.products{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+
+gap:30px;
+
+}
+
+.card{
+
+background:white;
+
+border-radius:22px;
+
+overflow:hidden;
+
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+
+transition:.3s;
+
+display:flex;
+
+flex-direction:column;
+
+}
+
+.card:hover{
+
+transform:translateY(-10px);
+
+box-shadow:0 20px 40px rgba(0,0,0,.15);
+
+}
+
+.card img{
+
+width:100%;
+
+height:250px;
+
+object-fit:contain;
+
+padding:20px;
+
+background:#fafafa;
+
+}
+
+.offer{
+
+margin:15px;
+
+display:inline-block;
+
+padding:8px 15px;
+
+background:red;
+
+color:white;
+
+border-radius:20px;
+
+font-size:14px;
+
+font-weight:bold;
+
+}
+
+.card h2{
+
+padding:0 20px;
+
+font-size:22px;
+
+margin:10px 0;
+
+}
+
+.card p{
+
+padding:0 20px;
+
+margin:8px 0;
+
+}
+
+.price{
+
+font-size:28px;
+
+font-weight:bold;
+
+color:#00b14f;
+
+}
+
+.stock{
+
+font-weight:bold;
+
+}
+
+.rating{
+
+padding:0 20px;
+
+font-size:18px;
+
+color:#ff9800;
+
+margin-bottom:15px;
+
+}
+
+.card button{
+
+margin:8px 20px;
+
+padding:14px;
+
+border:none;
+
+border-radius:12px;
+
+font-size:16px;
+
+font-weight:bold;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+.card button:nth-child(1){
+
+background:#00b14f;
+
+color:white;
+
+}
+
+.card button:hover{
+
+transform:scale(1.03);
+
+}
+
+/* =============================== */
+
+body{
+
+padding-bottom:90px;
+
+background:#f4f7fb;
+
+}
+
+.card-body{
+padding:20px;
+}
+
+.category-name{
+color:#666;
+margin:8px 0;
+}
+
+.price-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin:15px 0;
+}
+
+.button-group{
+display:flex;
+gap:10px;
+margin-top:15px;
+}
+
+.button-group button{
+flex:1;
+margin:0;
+}
+
+.button-group button:last-child{
+flex:0;
+width:55px;
+}
