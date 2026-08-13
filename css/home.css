@@ -244,7 +244,7 @@
 .products {
     display: grid;
 
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 
     gap: 22px;
 
@@ -457,9 +457,7 @@
     padding-bottom: 80px;
 }
 
-.best-section .products {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-}
+
 
 /* =========================================
    TABLET
