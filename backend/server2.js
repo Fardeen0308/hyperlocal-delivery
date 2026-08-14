@@ -1427,6 +1427,26 @@ app.put("/users/:id/block", async (req, res) => {
 
 });
 
+app.get("/users/:id", async (req, res) => {
+
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json(data);
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });

@@ -26,6 +26,10 @@ async function loadUsers() {
 
     <div class="buttons">
 
+    <button onclick="viewUser('${user.id}')">
+    👁 View
+</button>
+
         <button onclick="editUser('${user.id}')">
             ✏ Edit
         </button>
@@ -116,4 +120,26 @@ async function toggleBlock(id, blocked){
 
     loadUsers();
 
+}
+
+async function viewUser(id){
+
+    const response = await fetch(
+        `https://hyperlocal-backend-84rs.onrender.com/users/${id}`
+    );
+
+    const user = await response.json();
+
+    document.getElementById("userDetails").innerHTML = `
+        <h2>${user.name}</h2>
+        <p>📧 ${user.email}</p>
+        <p>👤 ${user.role}</p>
+        <p>🚫 Blocked: ${user.blocked ? "Yes" : "No"}</p>
+    `;
+
+    document.getElementById("userModal").style.display = "block";
+}
+
+function closeModal(){
+    document.getElementById("userModal").style.display = "none";
 }
