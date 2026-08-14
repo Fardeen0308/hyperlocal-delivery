@@ -1347,8 +1347,7 @@ app.get("/users", async (req, res) => {
 
     const { data, error } = await supabase
         .from("users")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
 
     if (error) {
         return res.status(500).json({
