@@ -24,6 +24,17 @@ async function loadUsers() {
 
     <p>👤 ${user.role}</p>
 
+    document.getElementById("totalUsers").innerText = users.length;
+
+document.getElementById("customerCount").innerText =
+users.filter(u => u.role === "customer").length;
+
+document.getElementById("adminCount").innerText =
+users.filter(u => u.role === "admin").length;
+
+document.getElementById("blockedCount").innerText =
+users.filter(u => u.blocked).length;
+
     <div class="buttons">
 
     <button onclick="viewUser('${user.id}')">
