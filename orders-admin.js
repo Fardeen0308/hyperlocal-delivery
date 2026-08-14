@@ -75,15 +75,15 @@ else if(order.status === "Delivered"){
 
             <p>📅 ${new Date(order.created_at).toLocaleString()}</p>
 
-            <p><b>Subtotal:</b> ₹${order.subtotal}</p>
+            <p><b>Subtotal:</b> ₹${Number(order.subtotal).toFixed(2)}</p>
 
-            <p><b>Delivery:</b> ₹${order.delivery}</p>
+<p><b>Delivery:</b> ₹${Number(order.delivery).toFixed(2)}</p>
 
-            <p><b>GST:</b> ₹${order.gst}</p>
+<p><b>GST:</b> ₹${Number(order.gst).toFixed(2)}</p>
 
-            <p><b>Discount:</b> ₹${order.discount}</p>
+<p><b>Discount:</b> ₹${Number(order.discount).toFixed(2)}</p>
 
-            <h3>Total: ₹${order.grandTotal}</h3>
+<h3>Total: ₹${Number(order.grandTotal).toFixed(2)}</h3>
 
             <p>
 Status:
@@ -98,13 +98,24 @@ ${order.status}
 </span>
 </p>
 
-            <button onclick="updateStatus('${order.id}')">
-                Change Status
-            </button>
+            <select id="status-${order.id}">
+    <option>Pending</option>
+    <option>Preparing</option>
+    <option>Out for Delivery</option>
+    <option>Delivered</option>
+</select>
+
+<button onclick="updateStatus('${order.id}')">
+✅ Update
+</button>
 
             <button onclick="deleteOrder('${order.id}')">
                 Delete Order
             </button>
+
+            <button onclick="viewOrder('${order.id}')">
+👁 View
+</button>
 
             <button onclick="printInvoice('${order.id}')">
 
@@ -134,11 +145,8 @@ ${order.status}
 
 async function updateStatus(id) {
 
-    const status = prompt(
-        "Enter Status:\nPending\nPreparing\nOut for Delivery\nDelivered"
-    );
-
-    if (!status) return;
+    const status =
+    document.getElementById("status-" + id).value;
 
     const response = await fetch(
         "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
@@ -275,5 +283,41 @@ card.style.display="none";
 function printInvoice(id){
 
 window.open("invoice.html?id="+id,"_blank");
+
+}
+
+async function viewOrder(id){
+
+const response=await fetch(
+"https://hyperlocal-backend-84rs.onrender.com/orders"
+);
+
+const orders=await response.json();
+
+const order=orders.find(o=>o.id==id);
+
+document.getElementById("orderDetails").innerHTML=`
+
+<h2>Order #${order.id}</h2>
+
+<p><b>Customer:</b> ${order.customerName}</p>
+
+<p><b>Phone:</b> ${order.phone}</p>
+
+<p><b>Address:</b> ${order.address}</p>
+
+<p><b>Status:</b> ${order.status}</p>
+
+<p><b>Total:</b> ₹${Number(order.grandTotal).toFixed(2)}</p>
+
+`;
+
+document.getElementById("orderModal").style.display="block";
+
+}
+
+function closeOrder(){
+
+document.getElementById("orderModal").style.display="none";
 
 }

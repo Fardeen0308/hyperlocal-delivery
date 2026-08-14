@@ -57,7 +57,7 @@ placeholder="🔍 Search Customer..."
 onkeyup="searchOrders()">
 
 <select id="statusFilter" onchange="filterOrders()">
-    
+
     <select id="paymentFilter" onchange="filterOrders()">
 
 <option value="All">All Payments</option>
@@ -81,6 +81,22 @@ onkeyup="searchOrders()">
 <div id="orders" class="orders-grid"></div>
 
 </div>
+</div>
+
+<div id="orderModal" class="modal">
+
+<div class="modal-content">
+
+<span
+class="close"
+onclick="closeOrder()">
+&times;
+</span>
+
+<div id="orderDetails"></div>
+
+</div>
+
 </div>
 
 <script src="orders-admin.js"></script>
