@@ -15,16 +15,7 @@ async function loadUsers() {
 
     users.forEach(user=>{
 
-       usersGrid.innerHTML += `
-<div class="card">
-
-    <h2>${user.name}</h2>
-
-    <p>📧 ${user.email}</p>
-
-    <p>👤 ${user.role}</p>
-
-    document.getElementById("totalUsers").innerText = users.length;
+        document.getElementById("totalUsers").innerText = users.length;
 
 document.getElementById("customerCount").innerText =
 users.filter(u => u.role === "customer").length;
@@ -34,6 +25,16 @@ users.filter(u => u.role === "admin").length;
 
 document.getElementById("blockedCount").innerText =
 users.filter(u => u.blocked).length;
+
+       usersGrid.innerHTML += `
+<div class="card">
+
+    <h2>${user.name}</h2>
+
+    <p>📧 ${user.email}</p>
+
+    <p>👤 ${user.role}</p>
+
 
     <div class="buttons">
 
