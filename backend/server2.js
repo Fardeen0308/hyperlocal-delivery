@@ -1447,6 +1447,55 @@ app.get("/users/:id", async (req, res) => {
 
 });
 
+app.get("/settings", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("settings")
+        .select("*")
+        .limit(1)
+        .single();
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json(data);
+
+});
+
+app.put("/settings", async (req, res) => {
+
+    const {
+        websiteName,
+        supportEmail,
+        supportPhone,
+        announcement
+    } = req.body;
+
+    const { error } = await supabase
+        .from("settings")
+        .update({
+            websiteName,
+            supportEmail,
+            supportPhone,
+            announcement
+        })
+        .eq("id", 1);
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: "Website Settings Updated Successfully"
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
