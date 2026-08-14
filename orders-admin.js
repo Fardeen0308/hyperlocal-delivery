@@ -29,6 +29,9 @@ async function loadOrders() {
 
     const orders = await response.json();
 
+    document.getElementById("orderCount").innerHTML =
+orders.length;
+
     const container = document.getElementById("orders");
 
     container.innerHTML = "";
@@ -62,11 +65,15 @@ else if(order.status === "Delivered"){
         container.innerHTML += `
         <div class="card">
 
+        <p><b>Order ID:</b> ${order.id}</p>
+
             <h2>${order.customerName}</h2>
 
             <p>📞 ${order.phone}</p>
 
             <p>🏠 ${order.address}</p>
+
+            <p>📅 ${new Date(order.created_at).toLocaleString()}</p>
 
             <p><b>Subtotal:</b> ₹${order.subtotal}</p>
 
@@ -98,6 +105,14 @@ ${order.status}
             <button onclick="deleteOrder('${order.id}')">
                 Delete Order
             </button>
+
+            <button onclick="printInvoice('${order.id}')">
+
+🖨 Print Invoice
+
+</button>
+
+
 
             <br><br>
 
@@ -204,6 +219,8 @@ async function start() {
 
 start();
 
+setInterval(loadOrders,10000);
+
 function searchOrders(){
 
 const input = document
@@ -252,5 +269,11 @@ card.style.display="none";
 }
 
 });
+
+}
+
+function printInvoice(id){
+
+window.open("invoice.html?id="+id,"_blank");
 
 }

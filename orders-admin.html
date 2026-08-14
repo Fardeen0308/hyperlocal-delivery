@@ -25,7 +25,28 @@
 
 <div class="main-content">
 
+<div class="dashboard-header">
+
+<div class="header-left">
+
 <h1>📦 Order Management</h1>
+
+<h3>
+
+Total Orders :
+<span id="orderCount">0</span>
+
+</h3>
+
+<p>Manage and track all customer orders.</p>
+
+</div>
+
+<div class="live-status">
+🟢 Live Orders
+</div>
+
+</div>
 
 <div class="orders-top">
 
@@ -36,6 +57,17 @@ placeholder="🔍 Search Customer..."
 onkeyup="searchOrders()">
 
 <select id="statusFilter" onchange="filterOrders()">
+    <select id="paymentFilter" onchange="filterOrders()">
+
+<option value="All">All Payments</option>
+
+<option value="Cash on Delivery">Cash on Delivery</option>
+
+<option value="UPI">UPI</option>
+
+<option value="Card">Card</option>
+
+</select>
 <option value="All">All Orders</option>
 <option value="Pending">Pending</option>
 <option value="Preparing">Preparing</option>
