@@ -20,6 +20,7 @@ async function loadOrders() {
     const orders = await response.json();
 
     const container = document.getElementById("orders");
+    let activeOrders = 0;
 
     container.innerHTML = "";
 
@@ -29,15 +30,20 @@ async function loadOrders() {
             order.status === "Out for Delivery" &&
             order.deliveryPartnerEmail === user.email
         ) {
+            activeOrders++;
 
             container.innerHTML += `
             <div class="card">
 
                 <h3>${order.customerName}</h3>
 
-                <p>${order.address}</p>
+<p>📞 ${order.phone}</p>
 
-                <p><b>Total Paid:</b> ₹${order.grandTotal}</p>
+<p>🏠 ${order.address}</p>
+
+<p><b>Total Paid:</b> ₹${Number(order.grandTotal).toFixed(2)}</p>
+
+<p><b>Payment:</b> ${order.payment}</p>
 
                 <input
                     type="text"
@@ -52,10 +58,18 @@ async function loadOrders() {
                     💬 Chat Customer
                 </button>
 
+                <button onclick="callCustomer('${order.phone}')">
+📞 Call Customer
+</button>
+
+<button onclick="openMaps('${order.address}')">
+📍 Open Maps
+</button>
+
             </div>
             `;
         }
-
+document.getElementById("activeOrders").innerText = activeOrders;
     });
 
     const currentOrders = container.children.length;
@@ -183,3 +197,18 @@ setInterval(() => {
     loadStats();
     sendLocation();
 }, 5000);
+
+function callCustomer(phone){
+
+window.location.href="tel:"+phone;
+
+}
+
+function openMaps(address){
+
+window.open(
+"https://www.google.com/maps/search/?api=1&query="+
+encodeURIComponent(address)
+);
+
+}

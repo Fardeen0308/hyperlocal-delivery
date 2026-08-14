@@ -31,7 +31,21 @@
 
 <div class="main-content">
 
+<div class="dashboard-header">
+
+<div class="header-left">
+
 <h1>🛵 Delivery Partners</h1>
+
+<p>Manage all delivery partners and monitor their status.</p>
+
+</div>
+
+<div class="live-status">
+🟢 Live Tracking
+</div>
+
+</div>
 
 <div class="stats">
 
@@ -70,6 +84,18 @@ type="text"
 id="search"
 placeholder="Search Partner..."
 onkeyup="loadPartners()">
+
+<select id="statusFilter" onchange="loadPartners()">
+
+<option value="">All Status</option>
+
+<option value="Available">Available</option>
+
+<option value="Busy">Busy</option>
+
+<option value="Offline">Offline</option>
+
+</select>
 
 <br><br>
 

@@ -30,14 +30,25 @@ partners.filter(p => p.status === "Offline").length;
         .value
         .toLowerCase();
 
+        const filter =
+document.getElementById("statusFilter").value;
+
     const container = document.getElementById("partners");
 
     container.innerHTML = "";
 
     partners
-        .filter(partner =>
-            partner.name.toLowerCase().includes(search)
-        )
+        .filter(partner=>{
+
+const matchSearch=
+partner.name.toLowerCase().includes(search);
+
+const matchStatus=
+filter==="" || partner.status===filter;
+
+return matchSearch && matchStatus;
+
+})
         .forEach(partner => {
 
             container.innerHTML += `
@@ -52,6 +63,14 @@ partners.filter(p => p.status === "Offline").length;
                 <p>📦 Deliveries: ${partner.totalDeliveries || 0}</p>
 
 <p>💰 Earnings: ₹${partner.totalEarnings || 0}</p>
+
+<p>⭐ Rating: ${partner.rating || 0}/5</p>
+
+<p>📦 Current Order:
+
+${partner.currentOrder || "None"}
+
+</p>
 
                 <p>Status</p>
 
@@ -70,6 +89,12 @@ partners.filter(p => p.status === "Offline").length;
                 <button onclick="deletePartner('${partner.id}')">
                     ❌ Delete
                 </button>
+
+                <button>
+
+🚫 Block
+
+</button>
 
             </div>
             `;
@@ -101,7 +126,9 @@ async function updateStatus(email, id) {
 
     alert(data.message);
 
-    loadPartners();
+   loadPartners();
+
+setInterval(loadPartners,10000);
 
 }
 
