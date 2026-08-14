@@ -17,31 +17,48 @@ async function loadProducts() {
 
     container.innerHTML = "";
 
-    products.forEach(product => {
+   products.forEach(product => {
+
+let stockBadge = "🟢 In Stock";
+
+if(product.stock<=10){
+    stockBadge="🟡 Low Stock";
+}
+
+if(product.stock<=0){
+    stockBadge="🔴 Out of Stock";
+}
 
         container.innerHTML += `
-        <div class="card">
+<div class="card">
 
-            <img src="${product.image}" width="150">
+<img src="${product.image}" alt="Product">
 
-            <h2>${product.name}</h2>
+<h2>${product.name}</h2>
 
-            <p>💰 ₹${product.price}</p>
+<p>🏷 ${product.category}</p>
 
-            <p>📦 Stock: ${product.stock}</p>
+<h3>₹${product.price}</h3>
 
-            <p>🏷️ ${product.category}</p>
+<p>${stockBadge}</p>
 
-            <button onclick="editProduct('${product.id}')">
-                ✏️ Edit
-            </button>
+<p>Stock : ${product.stock}</p>
 
-            <button onclick="deleteProduct('${product.id}')">
-                ❌ Delete
-            </button>
+<div class="button-group">
 
-        </div>
-        `;
+<button onclick="editProduct('${product.id}')">
+✏ Edit
+</button>
+
+<button onclick="deleteProduct('${product.id}')">
+🗑 Delete
+</button>
+
+</div>
+
+</div>
+`;
+        
 
     });
 
@@ -75,3 +92,44 @@ function editProduct(id){
 }
 
 loadProducts();
+
+document
+.getElementById("searchProduct")
+.addEventListener("input",function(){
+
+const keyword=this.value.toLowerCase();
+
+document.querySelectorAll(".card").forEach(card=>{
+
+card.style.display=
+card.innerText.toLowerCase().includes(keyword)
+?"block":"none";
+
+});
+
+});
+
+document
+.getElementById("categoryFilter")
+.addEventListener("change",function(){
+
+const value=this.value.toLowerCase();
+
+document.querySelectorAll(".card").forEach(card=>{
+
+if(value===""){
+
+card.style.display="block";
+
+}
+else{
+
+card.style.display=
+card.innerText.toLowerCase().includes(value)
+?"block":"none";
+
+}
+
+});
+
+});

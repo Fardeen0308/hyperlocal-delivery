@@ -36,8 +36,11 @@
     <div class="main-content">
 
 <div class="dashboard-header">
-    <div>
-       <div class="dashboard-header">
+
+    <div class="header-left">
+        <h1>👋 Welcome, Admin</h1>
+        <p>Monitor your HyperLocal business in real time.</p>
+    </div>
 
     <div class="header-left">
         <h1>👋 Welcome, Admin</h1>
@@ -55,6 +58,8 @@
         <div class="admin-profile">
             👤 Admin
         </div>
+
+        <div class="today-date" id="todayDate"></div>
 
     </div>
 
@@ -93,6 +98,48 @@
     <h3>Delivery Partners</h3>
     <h1 id="partners">0</h1>
     <p>Available Riders</p>
+</div>
+
+<h2>⚡ Quick Actions</h2>
+
+<div class="dashboard">
+
+<div class="card">
+<h3>➕ Add Product</h3>
+
+<a href="products.html">
+<button>Add</button>
+</a>
+
+</div>
+
+<div class="card">
+<h3>🎟 Create Coupon</h3>
+
+<a href="coupons.html">
+<button>Create</button>
+</a>
+
+</div>
+
+<div class="card">
+<h3>👥 Users</h3>
+
+<a href="users.html">
+<button>Open</button>
+</a>
+
+</div>
+
+<div class="card">
+<h3>🛵 Delivery</h3>
+
+<a href="delivery.html">
+<button>Manage</button>
+</a>
+
+</div>
+
 </div>
 
 </div>
@@ -154,6 +201,20 @@
         <h3>🥧 Order Status</h3>
         <canvas id="statusChart"></canvas>
     </div>
+
+</div>
+
+<h2>📢 Recent Activity</h2>
+
+<div class="card">
+
+<p>🟢 Dashboard Loaded Successfully</p>
+
+<p>📦 Orders Updated Every 10 Seconds</p>
+
+<p>💰 Revenue Analytics Active</p>
+
+<p>🚚 Delivery Tracking Active</p>
 
 </div>
 
@@ -262,7 +323,20 @@ window.statusChart = new Chart(statusCtx,{
 loadAnalytics();
 setInterval(loadAnalytics,10000);
 
+const today = new Date();
+
+document.getElementById("todayDate").innerHTML =
+today.toDateString();
+
 </script>
+<footer style="text-align:center;padding:25px;color:#777;">
+
+© 2026 HyperLocal Delivery
+<br>
+
+Admin Dashboard v1.0
+
+</footer>
 </div>
 </body>
 </html>

@@ -31,16 +31,44 @@
 
     <div class="main-content">
 
-        <h1>🛍 Products</h1>
+       <div class="dashboard-header">
 
-        <button onclick="window.location.href='add-product.html'">
-            ➕ Add New Product
+    <div class="header-left">
+        <h1>🛍 Products Management</h1>
+        <p>Manage all products in your store.</p>
+    </div>
+
+    <div class="header-right">
+
+        <input
+            type="text"
+            id="searchProduct"
+            placeholder="🔍 Search Products">
+
+        <select id="categoryFilter">
+
+            <option value="">All Categories</option>
+
+            <option>Groceries</option>
+            <option>Electronics</option>
+            <option>Fashion</option>
+            <option>Medicines</option>
+            <option>Vegetables</option>
+
+        </select>
+
+        <button
+        onclick="window.location.href='add-product.html'">
+
+        ➕ Add Product
+
         </button>
 
-        <br><br>
+    </div>
 
-        <div id="products" class="products"></div>
+</div>
 
+<div id="products" class="products"></div>
     </div>
 
 </div>
