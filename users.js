@@ -30,6 +30,10 @@ async function loadUsers() {
             ✏ Edit
         </button>
 
+        <button onclick="toggleBlock('${user.id}', ${user.blocked})">
+    ${user.blocked ? "✅ Unblock" : "🚫 Block"}
+</button>
+
         <button onclick="deleteUser('${user.id}')">
             🗑 Delete
         </button>
@@ -79,6 +83,29 @@ async function editUser(id){
             },
             body:JSON.stringify({
                 name:newName
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+
+    loadUsers();
+
+}
+
+async function toggleBlock(id, blocked){
+
+    const response = await fetch(
+        `https://hyperlocal-backend-84rs.onrender.com/users/${id}/block`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                blocked: !blocked
             })
         }
     );

@@ -1405,6 +1405,28 @@ app.put("/users/:id", async (req,res)=>{
 
 });
 
+app.put("/users/:id/block", async (req, res) => {
+
+    const { id } = req.params;
+    const { blocked } = req.body;
+
+    const { error } = await supabase
+        .from("users")
+        .update({ blocked })
+        .eq("id", id);
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json({
+        message: blocked ? "User Blocked" : "User Unblocked"
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
