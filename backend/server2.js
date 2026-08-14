@@ -1343,6 +1343,23 @@ app.get("/admin-analytics", async (req, res) => {
 
 });
 
+app.get("/users", async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+
+    res.json(data);
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
