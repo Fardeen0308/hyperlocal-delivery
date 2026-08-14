@@ -1359,6 +1359,52 @@ app.get("/users", async (req, res) => {
 
 });
 
+app.delete("/users/:id", async (req,res)=>{
+
+    const {id}=req.params;
+
+    const {error}=await supabase
+    .from("users")
+    .delete()
+    .eq("id",id);
+
+    if(error){
+        return res.status(500).json({
+            message:error.message
+        });
+    }
+
+    res.json({
+        message:"User Deleted Successfully"
+    });
+
+});
+
+app.put("/users/:id", async (req,res)=>{
+
+    const {id}=req.params;
+
+    const {name}=req.body;
+
+    const {error}=await supabase
+    .from("users")
+    .update({
+        name:name
+    })
+    .eq("id",id);
+
+    if(error){
+        return res.status(500).json({
+            message:error.message
+        });
+    }
+
+    res.json({
+        message:"User Updated Successfully"
+    });
+
+});
+
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
