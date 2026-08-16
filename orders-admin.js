@@ -101,10 +101,21 @@ ${order.status}
 </p>
 
             <select id="status-${order.id}">
-    <option>Pending</option>
-    <option>Preparing</option>
-    <option>Out for Delivery</option>
-    <option>Delivered</option>
+    <option value="Pending" ${order.status === "Pending" ? "selected" : ""}>
+        Pending
+    </option>
+
+    <option value="Preparing" ${order.status === "Preparing" ? "selected" : ""}>
+        Preparing
+    </option>
+
+    <option value="Out for Delivery" ${order.status === "Out for Delivery" ? "selected" : ""}>
+        Out for Delivery
+    </option>
+
+    <option value="Delivered" ${order.status === "Delivered" ? "selected" : ""}>
+        Delivered
+    </option>
 </select>
 
 <button onclick="updateStatus('${order.id}')">

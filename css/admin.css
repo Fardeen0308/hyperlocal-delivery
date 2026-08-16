@@ -1083,69 +1083,80 @@ button:hover {
    ORDER MANAGEMENT - FINAL LAYOUT
 ================================= */
 
+/* =================================
+   ORDERS MANAGEMENT
+================================= */
+
 .orders-top {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 25px 0;
+    margin: 20px 0;
     flex-wrap: wrap;
 }
 
 .orders-top input {
-    width: 320px;
-    padding: 12px 15px;
+    flex: 1;
+    min-width: 280px;
+    padding: 11px 15px;
     border: 1px solid #ddd;
     border-radius: 10px;
     box-sizing: border-box;
 }
 
 .orders-top select {
-    padding: 12px 15px;
+    padding: 11px 15px;
     border: 1px solid #ddd;
     border-radius: 10px;
     background: white;
     cursor: pointer;
 }
 
-/* Order cards */
+/* Order grid */
 
 .orders-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(280px, 1fr));
-    gap: 24px;
+    gap: 18px;
     width: 100%;
     align-items: start;
 }
 
+/* Compact order card */
+
 .orders-grid .order-card {
-    width: 100% !important;
+    width: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
     margin: 0 !important;
-    padding: 22px !important;
+    padding: 18px !important;
     box-sizing: border-box;
-    min-height: 500px;
 }
 
-/* Order information */
+/* Order text */
 
 .order-card h2 {
-    margin: 8px 0 15px;
-}
-
-.order-card p {
-    margin: 8px 0;
-    line-height: 1.45;
+    font-size: 20px;
+    margin: 6px 0 12px;
 }
 
 .order-card h3 {
-    margin: 15px 0;
+    font-size: 19px;
+    margin: 12px 0;
 }
 
-/* Status selector */
+.order-card p {
+    margin: 5px 0;
+    line-height: 1.35;
+    font-size: 14px;
+}
+
+/* Status */
 
 .order-card select {
     width: 100%;
-    padding: 10px;
-    margin: 8px 0;
+    padding: 8px 10px;
+    margin: 7px 0;
     border: 1px solid #ddd;
     border-radius: 8px;
     box-sizing: border-box;
@@ -1154,18 +1165,21 @@ button:hover {
 /* Buttons */
 
 .order-card button {
-    margin: 5px 4px 5px 0;
+    padding: 8px 12px;
+    margin: 4px 3px 4px 0;
+    border-radius: 7px;
+    cursor: pointer;
 }
 
-/* Delivery partner section */
+/* Delivery partner */
 
 .order-card .partner-select {
-    margin-top: 15px;
+    margin-top: 10px;
 }
 
 .order-card .assign-partner-btn {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 5px;
 }
 
 /* Tablet */
@@ -1194,6 +1208,7 @@ button:hover {
     .orders-top input,
     .orders-top select {
         width: 100%;
+        min-width: 0;
     }
 
 }
