@@ -1,218 +1,462 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+
     <title>Admin Dashboard</title>
+
     <link rel="stylesheet" href="css/admin.css">
-<link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/responsive.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
+
 <body>
 
 <div class="admin-layout">
+
+    <!-- ================= SIDEBAR ================= -->
 
     <div class="sidebar">
 
         <h2>🛵 HyperLocal</h2>
 
         <a href="admin-dashboard.html">📊 Dashboard</a>
-
         <a href="products.html">🛍 Products</a>
-
         <a href="orders-admin.html">📦 Orders</a>
-
         <a href="coupons.html">🎟 Coupons</a>
-
         <a href="delivery.html">🛵 Delivery</a>
-
         <a href="users.html">👥 Users</a>
-
         <a href="index.html">🏠 Website</a>
-
         <a href="admin.html">🚪 Logout</a>
 
     </div>
 
+
+    <!-- ================= MAIN CONTENT ================= -->
+
     <div class="main-content">
 
-<div class="dashboard-header">
 
-    <div class="header-left">
-        <h1>👋 Welcome, Admin</h1>
-        <p>Monitor your HyperLocal business in real time.</p>
-    </div>
+        <!-- ================= HEADER ================= -->
+
+        <div class="dashboard-header">
+
+            <div class="header-left">
+
+                <h1>👋 Welcome, Admin</h1>
+
+                <p>
+                    Monitor your HyperLocal business in real time.
+                </p>
+
+            </div>
 
 
-    <div class="header-right">
+            <div class="header-right">
 
-        <input type="text" id="searchBox" placeholder="🔍 Search..." />
+                <input
+                    type="text"
+                    id="searchBox"
+                    placeholder="🔍 Search..."
+                >
 
-        <button class="notification-btn">
-            🔔 <span id="notificationCount">3</span>
-        </button>
+                <button class="notification-btn">
 
-        <div class="admin-profile">
-            👤 Admin
+                    🔔
+
+                    <span id="notificationCount">
+                        3
+                    </span>
+
+                </button>
+
+
+                <div class="admin-profile">
+                    👤 Admin
+                </div>
+
+
+                <div
+                    class="today-date"
+                    id="todayDate">
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="today-date" id="todayDate"></div>
+
+        <!-- ================= LIVE STATUS ================= -->
+
+        <div class="live-status">
+
+            🟢 Live
+
+        </div>
+
+
+        <!-- ================= STATISTICS ================= -->
+
+        <div class="dashboard">
+
+
+            <div class="card stat-card">
+
+                <div class="icon">
+                    📦
+                </div>
+
+                <h3>
+                    Total Orders
+                </h3>
+
+                <h1 id="orders">
+                    0
+                </h1>
+
+                <p>
+                    Total Orders
+                </p>
+
+            </div>
+
+
+            <div class="card stat-card">
+
+                <div class="icon">
+                    💰
+                </div>
+
+                <h3>
+                    Total Revenue
+                </h3>
+
+                <h1 id="revenue">
+                    ₹0
+                </h1>
+
+                <p>
+                    Overall Earnings
+                </p>
+
+            </div>
+
+
+            <div class="card stat-card">
+
+                <div class="icon">
+                    👥
+                </div>
+
+                <h3>
+                    Customers
+                </h3>
+
+                <h1 id="customers">
+                    0
+                </h1>
+
+                <p>
+                    Registered Users
+                </p>
+
+            </div>
+
+
+            <div class="card stat-card">
+
+                <div class="icon">
+                    🚚
+                </div>
+
+                <h3>
+                    Delivery Partners
+                </h3>
+
+                <h1 id="partners">
+                    0
+                </h1>
+
+                <p>
+                    Available Riders
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================= QUICK ACTIONS ================= -->
+
+        <h2>
+            ⚡ Quick Actions
+        </h2>
+
+
+        <div class="quick-actions">
+
+
+            <div class="quick-action">
+
+                <h3>
+                    ➕ Add Product
+                </h3>
+
+                <a href="products.html">
+
+                    <button>
+                        Add
+                    </button>
+
+                </a>
+
+            </div>
+
+
+            <div class="quick-action">
+
+                <h3>
+                    🎟 Create Coupon
+                </h3>
+
+                <a href="coupons.html">
+
+                    <button>
+                        Create
+                    </button>
+
+                </a>
+
+            </div>
+
+
+            <div class="quick-action">
+
+                <h3>
+                    👥 Users
+                </h3>
+
+                <a href="users.html">
+
+                    <button>
+                        Open
+                    </button>
+
+                </a>
+
+            </div>
+
+
+            <div class="quick-action">
+
+                <h3>
+                    🛵 Delivery
+                </h3>
+
+                <a href="delivery.html">
+
+                    <button>
+                        Manage
+                    </button>
+
+                </a>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- ================= BEST PRODUCTS ================= -->
+
+        <h2>
+            🔥 Best Selling Products
+        </h2>
+
+
+        <div class="best-products-card">
+
+            <table class="best-products-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Rank
+                        </th>
+
+                        <th>
+                            Product
+                        </th>
+
+                        <th>
+                            Orders
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="bestProducts">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- ================= ORDER STATUS ================= -->
+
+        <h2>
+            📦 Order Status
+        </h2>
+
+
+        <div class="dashboard">
+
+
+            <div class="card">
+
+                <h3>
+                    🟡 Pending
+                </h3>
+
+                <h1 id="pending">
+                    0
+                </h1>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>
+                    👨‍🍳 Preparing
+                </h3>
+
+                <h1 id="preparing">
+                    0
+                </h1>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>
+                    🛵 Out for Delivery
+                </h3>
+
+                <h1 id="delivery">
+                    0
+                </h1>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>
+                    ✅ Delivered
+                </h3>
+
+                <h1 id="delivered">
+                    0
+                </h1>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- ================= ANALYTICS ================= -->
+
+        <h2>
+            📊 Analytics
+        </h2>
+
+
+        <div class="charts">
+
+
+            <div class="chart-container">
+
+                <h3>
+                    💰 Revenue Analytics
+                </h3>
+
+                <canvas id="ordersChart"></canvas>
+
+            </div>
+
+
+            <div class="chart-container">
+
+                <h3>
+                    🥧 Order Status
+                </h3>
+
+                <canvas id="statusChart"></canvas>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- ================= RECENT ACTIVITY ================= -->
+
+        <h2>
+            📢 Recent Activity
+        </h2>
+
+
+        <div class="card">
+
+            <p>
+                🟢 Dashboard Loaded Successfully
+            </p>
+
+            <p>
+                📦 Orders Updated Every 10 Seconds
+            </p>
+
+            <p>
+                💰 Revenue Analytics Active
+            </p>
+
+            <p>
+                🚚 Delivery Tracking Active
+            </p>
+
+        </div>
+
+
+        <!-- ================= FOOTER ================= -->
+
+        <footer style="text-align:center;padding:25px;color:#777;">
+
+            © 2026 HyperLocal Delivery
+
+            <br>
+
+            Admin Dashboard v1.0
+
+        </footer>
+
 
     </div>
 
 </div>
-    </div>
 
-    <div class="live-status">
-        🟢 Live
-    </div>
-</div>
-<div class="dashboard">
 
-<div class="card stat-card">
-    <div class="icon">📦</div>
-    <h3>Total Orders</h3>
-    <h1 id="orders">0</h1>
-    <p>Total Orders</p>
-</div>
-
-<div class="card stat-card">
-    <div class="icon">💰</div>
-    <h3>Total Revenue</h3>
-    <h1 id="revenue">₹0</h1>
-    <p>Overall Earnings</p>
-</div>
-
-<div class="card stat-card">
-    <div class="icon">👥</div>
-    <h3>Customers</h3>
-    <h1 id="customers">0</h1>
-    <p>Registered Users</p>
-</div>
-
-<div class="card stat-card">
-    <div class="icon">🚚</div>
-    <h3>Delivery Partners</h3>
-    <h1 id="partners">0</h1>
-    <p>Available Riders</p>
-</div>
-
-<h2>⚡ Quick Actions</h2>
-
-<div class="dashboard">
-
-<div class="card">
-<h3>➕ Add Product</h3>
-
-<a href="products.html">
-<button>Add</button>
-</a>
-
-</div>
-
-<div class="card">
-<h3>🎟 Create Coupon</h3>
-
-<a href="coupons.html">
-<button>Create</button>
-</a>
-
-</div>
-
-<div class="card">
-<h3>👥 Users</h3>
-
-<a href="users.html">
-<button>Open</button>
-</a>
-
-</div>
-
-<div class="card">
-<h3>🛵 Delivery</h3>
-
-<a href="delivery.html">
-<button>Manage</button>
-</a>
-
-</div>
-
-</div>
-
-</div>
-    <h2>🔥 Best Selling Products</h2>
-
-<div class="best-products-card">
-    <table class="best-products-table">
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Product</th>
-                <th>Orders</th>
-            </tr>
-        </thead>
-
-        <tbody id="bestProducts">
-
-        </tbody>
-
-    </table>
-</div>
-
-<h2>📦 Order Status</h2>
-
-<div class="dashboard">
-
-<div class="card">
-<h3>🟡 Pending</h3>
-<h1 id="pending">0</h1>
-</div>
-
-<div class="card">
-<h3>👨‍🍳 Preparing</h3>
-<h1 id="preparing">0</h1>
-</div>
-
-<div class="card">
-<h3>🛵 Out for Delivery</h3>
-<h1 id="delivery">0</h1>
-</div>
-
-<div class="card">
-<h3>✅ Delivered</h3>
-<h1 id="delivered">0</h1>
-</div>
-
-</div>
-
-<h2>📊 Analytics</h2>
-
-<div class="charts">
-
-    <div class="chart-container">
-        <h3>💰 Revenue Analytics</h3>
-        <canvas id="ordersChart"></canvas>
-    </div>
-
-    <div class="chart-container">
-        <h3>🥧 Order Status</h3>
-        <canvas id="statusChart"></canvas>
-    </div>
-
-</div>
-
-<h2>📢 Recent Activity</h2>
-
-<div class="card">
-
-<p>🟢 Dashboard Loaded Successfully</p>
-
-<p>📦 Orders Updated Every 10 Seconds</p>
-
-<p>💰 Revenue Analytics Active</p>
-
-<p>🚚 Delivery Tracking Active</p>
-
-</div>
+<!-- ================= JAVASCRIPT ================= -->
 
 <script>
 
@@ -224,115 +468,195 @@ async function loadAnalytics(){
 
     const data = await response.json();
 
+
     document.getElementById("orders").innerHTML =
-    data.totalOrders;
+        data.totalOrders;
+
 
     document.getElementById("revenue").innerHTML =
-"₹" + Number(data.totalRevenue).toFixed(2);
+        "₹" + Number(data.totalRevenue).toFixed(2);
+
 
     document.getElementById("customers").innerHTML =
-    data.totalCustomers;
+        data.totalCustomers;
+
 
     document.getElementById("partners").innerHTML =
-    data.totalDeliveryPartners;
+        data.totalDeliveryPartners;
 
-   let html = "";
 
-data.bestSellingProducts.forEach((product,index)=>{
+    let html = "";
 
-let medal="🥉";
 
-if(index===0) medal="🥇";
-if(index===1) medal="🥈";
+    data.bestSellingProducts.forEach((product,index)=>{
 
-html+=`
-<tr>
-<td>${medal}</td>
-<td>${product[0]}</td>
-<td>${product[1]}</td>
-</tr>
-`;
+        let medal = "🥉";
 
-});
+        if(index === 0) medal = "🥇";
 
-document.getElementById("bestProducts").innerHTML=html;
+        if(index === 1) medal = "🥈";
 
-document.getElementById("pending").innerHTML =
-data.pending;
 
-document.getElementById("preparing").innerHTML =
-data.preparing;
+        html += `
+        <tr>
 
-document.getElementById("delivery").innerHTML =
-data.outForDelivery;
+            <td>
+                ${medal}
+            </td>
 
-document.getElementById("delivered").innerHTML =
-data.delivered;
+            <td>
+                ${product[0]}
+            </td>
 
-// Revenue Chart
-const ordersCtx = document.getElementById("ordersChart").getContext("2d");
+            <td>
+                ${product[1]}
+            </td>
 
-if (window.ordersChart instanceof Chart) {
-    window.ordersChart.destroy();
-}
+        </tr>
+        `;
 
-window.ordersChart = new Chart(ordersCtx,{
-    type:"bar",
-    data:{
-        labels:["Orders","Revenue"],
-        datasets:[{
-            label:"Analytics",
-            data:[data.totalOrders,data.totalRevenue],
-            borderWidth:1
-        }]
+    });
+
+
+    document.getElementById("bestProducts").innerHTML =
+        html;
+
+
+    document.getElementById("pending").innerHTML =
+        data.pending;
+
+
+    document.getElementById("preparing").innerHTML =
+        data.preparing;
+
+
+    document.getElementById("delivery").innerHTML =
+        data.outForDelivery;
+
+
+    document.getElementById("delivered").innerHTML =
+        data.delivered;
+
+
+    /* ================= REVENUE CHART ================= */
+
+    const ordersCtx =
+        document
+        .getElementById("ordersChart")
+        .getContext("2d");
+
+
+    if(window.ordersChart instanceof Chart){
+
+        window.ordersChart.destroy();
+
     }
-});
 
-// Status Chart
-const statusCtx = document.getElementById("statusChart").getContext("2d");
 
-if (window.statusChart instanceof Chart) {
-    window.statusChart.destroy();
-}
+    window.ordersChart = new Chart(
+        ordersCtx,
+        {
 
-window.statusChart = new Chart(statusCtx,{
-    type:"pie",
-    data:{
-        labels:[
-            "Pending",
-            "Preparing",
-            "Out for Delivery",
-            "Delivered"
-        ],
-        datasets:[{
-            data:[
-                data.pending,
-                data.preparing,
-                data.outForDelivery,
-                data.delivered
-            ]
-        }]
+            type:"bar",
+
+            data:{
+
+                labels:[
+                    "Orders",
+                    "Revenue"
+                ],
+
+                datasets:[{
+
+                    label:"Analytics",
+
+                    data:[
+                        data.totalOrders,
+                        data.totalRevenue
+                    ],
+
+                    borderWidth:1
+
+                }]
+
+            }
+
+        }
+    );
+
+
+    /* ================= STATUS CHART ================= */
+
+    const statusCtx =
+        document
+        .getElementById("statusChart")
+        .getContext("2d");
+
+
+    if(window.statusChart instanceof Chart){
+
+        window.statusChart.destroy();
+
     }
-});
+
+
+    window.statusChart = new Chart(
+        statusCtx,
+        {
+
+            type:"pie",
+
+            data:{
+
+                labels:[
+                    "Pending",
+                    "Preparing",
+                    "Out for Delivery",
+                    "Delivered"
+                ],
+
+                datasets:[{
+
+                    data:[
+
+                        data.pending,
+                        data.preparing,
+                        data.outForDelivery,
+                        data.delivered
+
+                    ]
+
+                }]
+
+            }
+
+        }
+    );
+
 }
+
 
 loadAnalytics();
-setInterval(loadAnalytics,10000);
 
-const today = new Date();
+
+setInterval(
+    loadAnalytics,
+    10000
+);
+
+
+/* ================= DATE ================= */
+
+const today =
+    new Date();
+
 
 document.getElementById("todayDate").innerHTML =
-today.toDateString();
+    today.toDateString();
 
 </script>
-<footer style="text-align:center;padding:25px;color:#777;">
 
-© 2026 HyperLocal Delivery
-<br>
 
-Admin Dashboard v1.0
-
-</footer>
-</div>
 </body>
+
 </html>
