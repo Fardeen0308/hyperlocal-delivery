@@ -782,3 +782,193 @@ button:hover {
     }
 
 }
+
+/* =========================================
+   ORDERS MANAGEMENT
+   ========================================= */
+
+.orders-top{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:25px 0 30px;
+    flex-wrap:wrap;
+}
+
+.orders-top input{
+    flex:1;
+    min-width:250px;
+    padding:13px 16px;
+    border:1px solid #dbe2ea;
+    border-radius:10px;
+    background:white;
+    outline:none;
+    font-size:14px;
+}
+
+.orders-top input:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.1);
+}
+
+.orders-top select{
+    padding:13px 16px;
+    border:1px solid #dbe2ea;
+    border-radius:10px;
+    background:white;
+    cursor:pointer;
+    outline:none;
+}
+
+/* Orders Grid */
+
+.orders-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
+    gap:25px;
+    align-items:start;
+}
+
+/* Order Card */
+
+.orders-grid .card{
+    margin:0;
+    padding:24px;
+    text-align:left;
+    background:white;
+    border-radius:18px;
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+    transition:.25s ease;
+    border:1px solid #eef2f7;
+}
+
+.orders-grid .card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 15px 35px rgba(0,0,0,.12);
+}
+
+.orders-grid .card h2{
+    font-size:21px;
+    color:#1f2937;
+    margin-bottom:15px;
+}
+
+.orders-grid .card p{
+    margin:9px 0;
+    color:#6b7280;
+    font-size:14px;
+}
+
+.orders-grid .card h3{
+    color:#15803d;
+    font-size:23px;
+    margin:15px 0;
+}
+
+/* Status */
+
+.orders-grid .card span{
+    display:inline-block;
+    margin-left:5px;
+}
+
+/* Buttons */
+
+.orders-grid .card button{
+    border:none;
+    border-radius:9px;
+    padding:10px 14px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.orders-grid .card button:hover{
+    transform:translateY(-1px);
+}
+
+/* Change Status */
+
+.orders-grid .card button:first-of-type{
+    background:#2563eb;
+    color:white;
+}
+
+.orders-grid .card button:first-of-type:hover{
+    background:#1d4ed8;
+}
+
+/* Delete */
+
+.orders-grid .card button:nth-of-type(2){
+    background:#ef4444;
+    color:white;
+}
+
+.orders-grid .card button:nth-of-type(2):hover{
+    background:#dc2626;
+}
+
+/* Delivery Partner */
+
+.orders-grid .card select{
+    width:100%;
+    padding:11px 14px;
+    margin-top:12px;
+    border:1px solid #dbe2ea;
+    border-radius:9px;
+    background:#f8fafc;
+    outline:none;
+}
+
+.orders-grid .card select:focus{
+    border-color:#2563eb;
+}
+
+/* Assign Partner Button */
+
+.orders-grid .card select + button{
+    width:100%;
+    margin:10px 0 0;
+    background:#16a34a;
+    color:white;
+}
+
+.orders-grid .card select + button:hover{
+    background:#15803d;
+}
+
+/* Order Heading */
+
+.main-content > h1{
+    font-size:38px;
+    color:#1f2937;
+}
+
+/* Orders Responsive */
+
+@media(max-width:900px){
+
+    .orders-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+}
+
+@media(max-width:650px){
+
+    .orders-grid{
+        grid-template-columns:1fr;
+    }
+
+    .orders-top{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .orders-top input,
+    .orders-top select{
+        width:100%;
+    }
+
+}
