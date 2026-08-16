@@ -129,13 +129,17 @@ ${order.status}
 
             <br><br>
 
-            <select id="partner-${order.id}">
+            <select
+    id="partner-${order.id}"
+    class="partner-select">
                 ${partnerOptions}
             </select>
 
-            <button onclick="assignPartner('${order.id}')">
-                Assign Delivery Partner
-            </button>
+            <button
+    class="assign-partner-btn"
+    onclick="assignPartner('${order.id}')">
+    🛵 Assign Delivery Partner
+</button>
 
         </div>
         <br>
