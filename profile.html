@@ -1,133 +1,273 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>My Profile</title>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>My Profile - HyperLocal</title>
+
     <link rel="stylesheet" href="f.css">
+
 </head>
 
 <body>
 
-<header class="profile-header">
+<!-- HEADER -->
+
+<header class="profile-page-header">
+
     <h1>👤 My Profile</h1>
-    <p>Manage your account information</p>
+
+    <p>Manage your HyperLocal account</p>
+
 </header>
 
-<div class="profile-container">
 
-    <div class="profile-card">
+<!-- PROFILE -->
 
-        <div class="profile-avatar" id="profileAvatar">
+<main class="profile-page">
+
+    <div class="customer-profile-card">
+
+        <!-- Avatar -->
+
+        <div class="customer-avatar" id="avatar">
             👤
         </div>
 
-        <h2 id="name">Loading...</h2>
+        <h2 id="customerName">
+            Customer
+        </h2>
 
-        <p class="profile-role" id="role"></p>
+        <p class="customer-email" id="customerEmail">
+            Loading...
+        </p>
 
-        <div class="profile-info">
 
-            <div class="profile-info-row">
+        <!-- ACCOUNT INFORMATION -->
+
+        <div class="profile-details">
+
+            <div class="profile-detail">
+
                 <span>📧</span>
+
                 <div>
+
                     <small>Email</small>
-                    <p id="email">Loading...</p>
+
+                    <p id="email">
+                        -
+                    </p>
+
                 </div>
+
             </div>
 
-            <div class="profile-info-row">
+
+            <div class="profile-detail">
+
                 <span>📱</span>
+
                 <div>
+
                     <small>Phone</small>
-                    <p id="phone">Not added</p>
+
+                    <p id="phone">
+                        Not added
+                    </p>
+
                 </div>
+
+            </div>
+
+
+            <div class="profile-detail">
+
+                <span>🏠</span>
+
+                <div>
+
+                    <small>Address</small>
+
+                    <p id="address">
+                        Not added
+                    </p>
+
+                </div>
+
             </div>
 
         </div>
 
-        <button class="profile-edit-btn" onclick="editProfile()">
-            ✏️ Edit Profile
-        </button>
 
-        <button class="profile-logout-btn" onclick="logout()">
-            🚪 Logout
-        </button>
+        <!-- PROFILE ACTIONS -->
+
+        <div class="profile-actions">
+
+            <button
+                onclick="window.location.href='orders.html'">
+
+                📦 My Orders
+
+            </button>
+
+
+            <button
+                onclick="window.location.href='wishlist.html'">
+
+                ❤️ My Wishlist
+
+            </button>
+
+
+            <button
+                onclick="editProfile()">
+
+                ✏️ Edit Profile
+
+            </button>
+
+
+            <button
+                class="logout-button"
+                onclick="logout()">
+
+                🚪 Logout
+
+            </button>
+
+        </div>
 
     </div>
 
-</div>
+</main>
+
+
+<!-- BOTTOM NAVIGATION -->
 
 <div class="bottom-nav">
 
     <a href="index.html">
-        🏠<br>
+
+        🏠
+        <br>
         <span>Home</span>
+
     </a>
+
 
     <a href="wishlist.html">
-        ❤️<br>
+
+        ❤️
+        <br>
         <span>Wishlist</span>
+
     </a>
+
 
     <a href="orders.html">
-        📦<br>
+
+        📦
+        <br>
         <span>Orders</span>
+
     </a>
 
-    <a href="profile.html" class="active">
-        👤<br>
+
+    <a href="profile.html"
+       class="active">
+
+        👤
+        <br>
         <span>Profile</span>
+
     </a>
 
 </div>
+
 
 <script>
 
 const user =
     JSON.parse(localStorage.getItem("user"));
 
+
 if (!user) {
 
     window.location.href = "login.html";
 
-} else {
+}
 
-    document.getElementById("name").innerText =
-        user.name || "User";
 
-    document.getElementById("email").innerText =
+else {
+
+    const name =
+        user.name || "Customer";
+
+    const email =
         user.email || "Not available";
 
-    document.getElementById("phone").innerText =
+    const phone =
         user.phone || "Not added";
 
-    document.getElementById("role").innerText =
-        user.role ? user.role.toUpperCase() : "CUSTOMER";
+    const address =
+        user.address || "Not added";
 
-    // Create avatar using first letter of name
-    if (user.name) {
 
-        document.getElementById("profileAvatar").innerText =
-            user.name.charAt(0).toUpperCase();
+    document.getElementById("customerName")
+        .innerText = name;
 
-    }
+
+    document.getElementById("customerEmail")
+        .innerText = email;
+
+
+    document.getElementById("email")
+        .innerText = email;
+
+
+    document.getElementById("phone")
+        .innerText = phone;
+
+
+    document.getElementById("address")
+        .innerText = address;
+
+
+    // First letter avatar
+
+    document.getElementById("avatar")
+        .innerText =
+        name.charAt(0).toUpperCase();
 
 }
+
 
 function editProfile() {
 
-    alert("Profile editing will be added next.");
+    alert(
+        "Profile editing will be added next."
+    );
 
 }
+
 
 function logout() {
 
     localStorage.removeItem("user");
 
-    window.location.href = "login.html";
+    window.location.href =
+        "login.html";
 
 }
 
 </script>
 
 </body>
+
 </html>

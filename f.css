@@ -579,180 +579,279 @@ canvas{
     height:400px !important;
 }
 
-/* =========================
-   PROFILE PAGE
-========================= */
 
-.profile-header {
-    background: linear-gradient(135deg, #00b14f, #008f3f);
+
+/* =================================
+   CUSTOMER PROFILE PAGE
+================================= */
+
+.profile-page-header {
+
+    background: linear-gradient(
+        135deg,
+        #00b14f,
+        #008f40
+    );
+
     color: white;
+
     text-align: center;
+
     padding: 30px 20px;
+
     border-radius: 0 0 25px 25px;
+
 }
 
-.profile-header h1 {
+.profile-page-header h1 {
+
     color: white;
+
     margin: 0;
+
     font-size: 30px;
+
 }
 
-.profile-header p {
+.profile-page-header p {
+
     margin: 8px 0 0;
+
     opacity: 0.9;
+
 }
 
-.profile-container {
+
+.profile-page {
+
     max-width: 500px;
-    margin: 35px auto 120px;
-    padding: 0 20px;
+
+    margin: 30px auto 120px;
+
+    padding: 0 15px;
+
 }
 
-.profile-card {
+
+.customer-profile-card {
+
     background: white;
+
     border-radius: 22px;
-    padding: 30px;
+
+    padding: 30px 25px;
+
     text-align: center;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+
+    box-shadow:
+        0 6px 25px
+        rgba(0,0,0,0.10);
+
 }
 
-.profile-avatar {
-    width: 95px;
-    height: 95px;
-    margin: 0 auto 15px;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.customer-avatar {
+
+    width: 95px;
+
+    height: 95px;
+
+    margin: 0 auto 15px;
 
     border-radius: 50%;
 
     background: #00b14f;
+
     color: white;
 
-    font-size: 40px;
-    font-weight: bold;
-
-    box-shadow: 0 5px 15px rgba(0,177,79,0.3);
-}
-
-.profile-card h2 {
-    margin: 10px 0 5px;
-    font-size: 25px;
-    color: #222;
-}
-
-.profile-role {
-    color: #00a84f;
-    font-weight: bold;
-    font-size: 14px;
-    margin-bottom: 25px;
-}
-
-.profile-info {
-    text-align: left;
-    margin-top: 20px;
-}
-
-.profile-info-row {
     display: flex;
+
     align-items: center;
+
+    justify-content: center;
+
+    font-size: 40px;
+
+    font-weight: bold;
+
+}
+
+
+.customer-profile-card h2 {
+
+    margin: 8px 0;
+
+    font-size: 25px;
+
+    color: #222;
+
+}
+
+
+.customer-email {
+
+    color: #777;
+
+    margin-bottom: 25px;
+
+}
+
+
+/* INFORMATION */
+
+.profile-details {
+
+    text-align: left;
+
+}
+
+
+.profile-detail {
+
+    display: flex;
+
+    align-items: center;
+
     gap: 15px;
-
-    padding: 15px;
-
-    margin-bottom: 12px;
 
     background: #f7f9fa;
 
+    padding: 14px;
+
+    margin-bottom: 12px;
+
     border-radius: 12px;
+
 }
 
-.profile-info-row > span {
-    font-size: 25px;
+
+.profile-detail > span {
+
+    font-size: 24px;
+
 }
 
-.profile-info-row small {
-    color: #777;
+
+.profile-detail small {
+
     display: block;
+
+    color: #777;
+
     margin-bottom: 4px;
+
 }
 
-.profile-info-row p {
+
+.profile-detail p {
+
     margin: 0;
-    color: #222;
+
     font-weight: bold;
+
+    color: #222;
+
     word-break: break-word;
+
 }
 
-.profile-edit-btn,
-.profile-logout-btn {
+
+/* BUTTONS */
+
+.profile-actions {
+
+    margin-top: 25px;
+
+}
+
+
+.profile-actions button {
+
     width: 100%;
-    margin-top: 15px;
+
     padding: 13px;
 
+    margin-top: 10px;
+
     border: none;
+
     border-radius: 10px;
 
+    background: #00b14f;
+
+    color: white;
+
     font-size: 16px;
+
     font-weight: bold;
 
     cursor: pointer;
+
 }
 
-.profile-edit-btn {
-    background: #0d6efd;
-    color: white;
+
+.profile-actions button:hover {
+
+    background: #008f40;
+
 }
 
-.profile-edit-btn:hover {
-    background: #0b5ed7;
-}
 
-.profile-logout-btn {
+.profile-actions .logout-button {
+
     background: #ffe5e5;
+
     color: #d62828;
+
 }
 
-.profile-logout-btn:hover {
+
+.profile-actions .logout-button:hover {
+
     background: #ffcccc;
+
 }
 
-/* Bottom navigation */
+
+/* ACTIVE BOTTOM NAV */
 
 .bottom-nav a.active {
+
     color: #00b14f;
+
 }
 
-.bottom-nav a span {
-    font-size: 13px;
-}
 
-/* Mobile */
+/* MOBILE */
 
 @media (max-width: 600px) {
 
-    .profile-header {
+    .profile-page-header {
+
         padding: 25px 15px;
+
     }
 
-    .profile-header h1 {
+    .profile-page-header h1 {
+
         font-size: 25px;
+
     }
 
-    .profile-container {
-        margin-top: 25px;
-        padding: 0 15px;
-    }
+    .customer-profile-card {
 
-    .profile-card {
         padding: 25px 18px;
+
     }
 
-    .profile-avatar {
+    .customer-avatar {
+
         width: 80px;
+
         height: 80px;
+
         font-size: 32px;
+
     }
 
 }
