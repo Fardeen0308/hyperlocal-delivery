@@ -1,68 +1,156 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Delivery Dashboard</title>
-    <link rel="stylesheet" href="f.css">
+    <title>Delivery Partner Dashboard</title>
+
+    <link rel="stylesheet" href="css/delivery.css">
+    <link rel="stylesheet" href="css/responsive.css">
 </head>
+
 <body>
 
-<header>
-<h1>🚴 Delivery Partner Dashboard</h1>
+<div class="delivery-layout">
 
-<button onclick="logout()">Logout</button>
+    <!-- SIDEBAR -->
+    <aside class="delivery-sidebar">
 
-<div class="profile-card">
+        <h2>🛵 HyperLocal</h2>
 
-<h2 id="partnerName"></h2>
+        <a href="delivery-dashboard.html">🏠 Dashboard</a>
 
-<p id="partnerEmail"></p>
+        <a href="delivery-earnings.html">💰 My Earnings</a>
 
-<p id="partnerPhone"></p>
+        <a href="customer-chat.html">💬 Customer Chat</a>
+
+        <a href="#" onclick="toggleStatus(); return false;">
+            🟢 Availability
+        </a>
+
+        <a href="#" onclick="logout(); return false;">
+            🚪 Logout
+        </a>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="delivery-main">
+
+        <div class="delivery-header">
+
+            <div>
+                <h1>🚴 Delivery Dashboard</h1>
+                <p>Manage your deliveries and earnings.</p>
+            </div>
+
+            <div class="header-actions">
+
+                <span id="statusBadge" class="status-badge available">
+                    🟢 Available
+                </span>
+
+                <button onclick="logout()" class="logout-btn">
+                    Logout
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- STATS -->
+
+        <div class="stats">
+
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <h2 id="earnings">₹0</h2>
+                <p>Earnings</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <h2 id="completed">0</h2>
+                <p>Completed Deliveries</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <h2 id="activeOrders">0</h2>
+                <p>Active Orders</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <h2 id="rating">0⭐</h2>
+                <p>Rating</p>
+            </div>
+
+        </div>
+
+
+        <!-- ACTIVE ORDERS -->
+
+        <div class="section-header">
+
+            <div>
+                <h2>📦 Active Deliveries</h2>
+                <p>Orders currently assigned to you.</p>
+            </div>
+
+            <button
+                onclick="toggleStatus()"
+                id="statusBtn"
+                class="availability-btn">
+                🟢 Available
+            </button>
+
+        </div>
+
+
+        <div id="orders" class="orders-grid"></div>
+
+
+        <!-- ACTIONS -->
+
+        <div class="quick-actions">
+
+            <a href="customer-chat.html">
+                <button>💬 Customer Chat</button>
+            </a>
+
+            <button onclick="window.location.href='delivery-earnings.html'">
+                💰 My Earnings
+            </button>
+
+        </div>
+
+
+        <!-- HISTORY -->
+
+        <div class="section-header">
+
+            <div>
+                <h2>📋 Completed Deliveries</h2>
+                <p>Your delivery history.</p>
+            </div>
+
+        </div>
+
+        <div id="history" class="history-card">
+            <p>Completed delivery history will appear here.</p>
+        </div>
+
+
+        <footer>
+            © 2026 HyperLocal Delivery
+        </footer>
+
+    </main>
 
 </div>
 
-<div class="stats">
 
-<div class="stat-card">
-<h2 id="earnings">₹0</h2>
-<p>Earnings</p>
-</div>
-
-<div class="stat-card">
-<h2 id="completed">0</h2>
-<p>Completed</p>
-</div>
-
-<div class="stat-card">
-<h2 id="activeOrders">0</h2>
-<p>Active Orders</p>
-</div>
-
-<div class="stat-card">
-<h2 id="rating">0⭐</h2>
-<p>Rating</p>
-</div>
-
-</div>
-</header>
-
-<div id="orders"></div>
-
-<a href="customer-chat.html">
-<button>💬 Customer Chat</button>
-</a>
-
-<button onclick="toggleStatus()" id="statusBtn">
-🟢 Available
-</button>
-
-<button onclick="window.location.href='delivery-earnings.html'">
-💰 My Earnings
-</button>
-
-<h2>💰 Completed Deliveries</h2>
-
-<div id="history"></div>
 <script src="auth.js"></script>
 <script src="delivery-dashboard.js"></script>
 
