@@ -63,7 +63,9 @@ else if(order.status === "Delivered"){
 }
 
         container.innerHTML += `
-        <div class="card">
+        <div class="card order-card"
+     data-payment="${order.paymentMethod || order.payment || ''}"
+     data-status="${order.status}">
 
         <p><b>Order ID:</b> ${order.id}</p>
 
@@ -229,54 +231,60 @@ start();
 
 setInterval(loadOrders,10000);
 
-function searchOrders(){
 
-const input = document
-.getElementById("searchOrder")
-.value.toLowerCase();
+function filterOrders() {
 
-const cards =
-document.querySelectorAll(".card");
+    const search =
+        document.getElementById("searchOrder")
+        .value
+        .toLowerCase();
 
-cards.forEach(card=>{
+    const status =
+        document.getElementById("statusFilter").value;
 
-const text =
-card.innerText.toLowerCase();
+    const payment =
+        document.getElementById("paymentFilter").value;
 
-if(text.includes(input)){
-card.style.display="block";
-}
-else{
-card.style.display="none";
-}
+    const cards =
+        document.querySelectorAll(".order-card");
 
-});
+    cards.forEach(card => {
 
-}
+        const text =
+            card.innerText.toLowerCase();
 
-function filterOrders(){
+        const cardStatus =
+            card.dataset.status;
 
-const status =
-document.getElementById("statusFilter").value;
+        const cardPayment =
+            card.dataset.payment;
 
-const cards =
-document.querySelectorAll(".card");
+        const matchesSearch =
+            text.includes(search);
 
-cards.forEach(card=>{
+        const matchesStatus =
+            status === "All" ||
+            cardStatus === status;
 
-if(status==="All"){
-card.style.display="block";
-return;
-}
+        const matchesPayment =
+            payment === "All" ||
+            cardPayment === payment;
 
-if(card.innerText.includes(status)){
-card.style.display="block";
-}
-else{
-card.style.display="none";
-}
+        if (
+            matchesSearch &&
+            matchesStatus &&
+            matchesPayment
+        ) {
 
-});
+            card.style.display = "";
+
+        } else {
+
+            card.style.display = "none";
+
+        }
+
+    });
 
 }
 

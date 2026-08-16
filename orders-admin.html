@@ -47,36 +47,33 @@ Total Orders :
 </div>
 
 </div>
-
 <div class="orders-top">
 
-<input
-type="text"
-id="searchOrder"
-placeholder="🔍 Search Customer..."
-onkeyup="searchOrders()">
-
-<select id="statusFilter" onchange="filterOrders()">
+    <input
+        type="text"
+        id="searchOrder"
+        placeholder="🔍 Search Customer..."
+        oninput="filterOrders()"
+    >
 
     <select id="paymentFilter" onchange="filterOrders()">
+        <option value="All">All Payments</option>
+        <option value="Cash on Delivery">Cash on Delivery</option>
+        <option value="UPI">UPI</option>
+        <option value="Card">Card</option>
+    </select>
 
-<option value="All">All Payments</option>
-
-<option value="Cash on Delivery">Cash on Delivery</option>
-
-<option value="UPI">UPI</option>
-
-<option value="Card">Card</option>
-
-</select>
-<option value="All">All Orders</option>
-<option value="Pending">Pending</option>
-<option value="Preparing">Preparing</option>
-<option value="Out for Delivery">Out for Delivery</option>
-<option value="Delivered">Delivered</option>
-</select>
+    <select id="statusFilter" onchange="filterOrders()">
+        <option value="All">All Orders</option>
+        <option value="Pending">Pending</option>
+        <option value="Preparing">Preparing</option>
+        <option value="Out for Delivery">Out for Delivery</option>
+        <option value="Delivered">Delivered</option>
+    </select>
 
 </div>
+
+<div id="orders" class="orders-grid"></div>
 
 <div id="orders" class="orders-grid"></div>
 
