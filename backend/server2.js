@@ -1380,31 +1380,6 @@ app.delete("/users/:id", async (req,res)=>{
 
 });
 
-app.put("/users/:id", async (req,res)=>{
-
-    const {id}=req.params;
-
-    const {name}=req.body;
-
-    const {error}=await supabase
-    .from("users")
-    .update({
-        name:name
-    })
-    .eq("id",id);
-
-    if(error){
-        return res.status(500).json({
-            message:error.message
-        });
-    }
-
-    res.json({
-        message:"User Updated Successfully"
-    });
-
-});
-
 app.put("/users/:id/block", async (req, res) => {
 
     const { id } = req.params;

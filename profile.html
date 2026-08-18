@@ -198,40 +198,41 @@ const userData = localStorage.getItem("user");
 if (!userData || userData === "undefined" || userData === "null") {
 
     alert("Please login again.");
-    window.location.href = "login.html";
+    window.location.replace("login.html");
 
 } else {
 
-    let user;
-
-    try {
-        user = JSON.parse(userData);
-    } catch (error) {
-
-        console.error("Invalid user data:", error);
-
-        localStorage.removeItem("user");
-
-        alert("Session expired. Please login again.");
-
-        window.location.href = "login.html";
-    }
-
+    const user = JSON.parse(userData);
 
     if (!user || !user.id) {
 
         localStorage.removeItem("user");
-
-        alert("Please login again.");
-
-        window.location.href = "login.html";
+        window.location.replace("login.html");
 
     } else {
 
-        displayProfile(user);
+        document.getElementById("customerName").innerText =
+            user.name || "Customer";
 
+        document.getElementById("customerEmail").innerText =
+            user.email || "Not available";
+
+        document.getElementById("email").innerText =
+            user.email || "Not available";
+
+        document.getElementById("phone").innerText =
+            user.phone || "Not added";
+
+        document.getElementById("address").innerText =
+            user.address || "Not added";
+
+        document.getElementById("avatar").innerText =
+            (user.name || "C").charAt(0).toUpperCase();
     }
 }
+
+
+   
 
 
 /* =========================
@@ -437,8 +438,8 @@ function logout() {
 
     localStorage.removeItem("user");
 
-    window.location.href =
-        "login.html";
+    window.location.replace("login.html");
+
 }
 
 </script>
