@@ -193,9 +193,16 @@
 
 <script>
 
-const user =
-    JSON.parse(localStorage.getItem("user"));
+const userData = localStorage.getItem("user");
 
+if (!userData || userData === "undefined") {
+    alert("Please login again.");
+    window.location.href = "login.html";
+}
+
+const user = JSON.parse(userData);
+document.getElementById("name").innerText = user.name;
+document.getElementById("email").innerText = user.email;
 
 if (!user) {
 
