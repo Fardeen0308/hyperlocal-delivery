@@ -1496,6 +1496,60 @@ app.put("/settings", async (req, res) => {
 
 });
 
+app.put("/users/:id", async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+
+        const {
+            name,
+            phone,
+            address
+        } = req.body;
+
+        if (!name || !name.trim()) {
+            return res.status(400).json({
+                message: "Name is required"
+            });
+        }
+
+        const { data, error } = await supabase
+            .from("users")
+            .update({
+                name: name.trim(),
+                phone: phone ? phone.trim() : null,
+                address: address ? address.trim() : null
+            })
+            .eq("id", id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Profile update error:", error);
+
+            return res.status(500).json({
+                message: error.message
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Profile updated successfully",
+            user: data
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            message: "Server error"
+        });
+
+    }
+
+});
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });

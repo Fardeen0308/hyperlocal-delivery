@@ -248,14 +248,139 @@ else {
 }
 
 
-function editProfile() {
+async function editProfile() {
 
-    alert(
-        "Profile editing will be added next."
+    const user =
+        JSON.parse(localStorage.getItem("user"));
+
+    if (!user || !user.id) {
+
+        alert("Please login again.");
+
+        window.location.href = "login.html";
+
+        return;
+    }
+
+    const newName = prompt(
+        "Enter your name:",
+        user.name || ""
     );
 
-}
+    if (newName === null) return;
 
+
+    const newPhone = prompt(
+        "Enter your phone number:",
+        user.phone || ""
+    );
+
+    if (newPhone === null) return;
+
+
+    const newAddress = prompt(
+        "Enter your address:",
+        user.address || ""
+    );
+
+    if (newAddress === null) return;
+
+
+    try {
+
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/users/" + user.id,
+            {
+                method: "PUT",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    name: newName,
+
+                    phone: newPhone,
+
+                    address: newAddress
+
+                })
+            }
+        );
+
+
+        const data = await response.json();
+
+
+        if (!response.ok) {
+
+            alert(
+                "❌ " +
+                (data.message || "Update failed")
+            );
+
+            return;
+        }
+
+
+        // Save updated Supabase user
+
+        localStorage.setItem(
+            "user",
+            JSON.stringify(data.user)
+        );
+
+
+        // Update profile page
+
+        document.getElementById("customerName")
+            .innerText =
+            data.user.name || "Customer";
+
+
+        document.getElementById("customerEmail")
+            .innerText =
+            data.user.email || "Not available";
+
+
+        document.getElementById("email")
+            .innerText =
+            data.user.email || "Not available";
+
+
+        document.getElementById("phone")
+            .innerText =
+            data.user.phone || "Not added";
+
+
+        document.getElementById("address")
+            .innerText =
+            data.user.address || "Not added";
+
+
+        document.getElementById("avatar")
+            .innerText =
+            (data.user.name || "C")
+            .charAt(0)
+            .toUpperCase();
+
+
+        alert("✅ Profile updated successfully!");
+
+    }
+
+    catch (error) {
+
+        console.error("Profile error:", error);
+
+        alert(
+            "❌ Unable to connect to server."
+        );
+
+    }
+
+}
 
 function logout() {
 
