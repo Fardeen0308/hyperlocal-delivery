@@ -195,23 +195,50 @@
 
 const userData = localStorage.getItem("user");
 
-if (!userData || userData === "undefined") {
+if (!userData || userData === "undefined" || userData === "null") {
+
     alert("Please login again.");
     window.location.href = "login.html";
+
+} else {
+
+    let user;
+
+    try {
+        user = JSON.parse(userData);
+    } catch (error) {
+
+        console.error("Invalid user data:", error);
+
+        localStorage.removeItem("user");
+
+        alert("Session expired. Please login again.");
+
+        window.location.href = "login.html";
+    }
+
+
+    if (!user || !user.id) {
+
+        localStorage.removeItem("user");
+
+        alert("Please login again.");
+
+        window.location.href = "login.html";
+
+    } else {
+
+        displayProfile(user);
+
+    }
 }
 
-const user = JSON.parse(userData);
-document.getElementById("name").innerText = user.name;
-document.getElementById("email").innerText = user.email;
 
-if (!user) {
+/* =========================
+   DISPLAY PROFILE
+========================= */
 
-    window.location.href = "login.html";
-
-}
-
-
-else {
+function displayProfile(user) {
 
     const name =
         user.name || "Customer";
@@ -246,19 +273,51 @@ else {
         .innerText = address;
 
 
-    // First letter avatar
-
     document.getElementById("avatar")
         .innerText =
         name.charAt(0).toUpperCase();
-
 }
 
 
+/* =========================
+   EDIT PROFILE
+========================= */
+
 async function editProfile() {
 
-    const user =
-        JSON.parse(localStorage.getItem("user"));
+    const userData =
+        localStorage.getItem("user");
+
+
+    if (!userData || userData === "undefined") {
+
+        alert("Please login again.");
+
+        window.location.href = "login.html";
+
+        return;
+    }
+
+
+    let user;
+
+    try {
+
+        user = JSON.parse(userData);
+
+    } catch (error) {
+
+        console.error(error);
+
+        localStorage.removeItem("user");
+
+        alert("Please login again.");
+
+        window.location.href = "login.html";
+
+        return;
+    }
+
 
     if (!user || !user.id) {
 
@@ -268,6 +327,7 @@ async function editProfile() {
 
         return;
     }
+
 
     const newName = prompt(
         "Enter your name:",
@@ -296,7 +356,9 @@ async function editProfile() {
     try {
 
         const response = await fetch(
+
             "https://hyperlocal-backend-84rs.onrender.com/users/" + user.id,
+
             {
                 method: "PUT",
 
@@ -320,18 +382,21 @@ async function editProfile() {
         const data = await response.json();
 
 
+        console.log("PROFILE UPDATE:", data);
+
+
         if (!response.ok) {
 
             alert(
                 "❌ " +
-                (data.message || "Update failed")
+                (data.message || "Profile update failed")
             );
 
             return;
         }
 
 
-        // Save updated Supabase user
+        /* SAVE UPDATED USER */
 
         localStorage.setItem(
             "user",
@@ -339,55 +404,34 @@ async function editProfile() {
         );
 
 
-        // Update profile page
+        /* UPDATE PAGE */
 
-        document.getElementById("customerName")
-            .innerText =
-            data.user.name || "Customer";
+        displayProfile(data.user);
 
 
-        document.getElementById("customerEmail")
-            .innerText =
-            data.user.email || "Not available";
-
-
-        document.getElementById("email")
-            .innerText =
-            data.user.email || "Not available";
-
-
-        document.getElementById("phone")
-            .innerText =
-            data.user.phone || "Not added";
-
-
-        document.getElementById("address")
-            .innerText =
-            data.user.address || "Not added";
-
-
-        document.getElementById("avatar")
-            .innerText =
-            (data.user.name || "C")
-            .charAt(0)
-            .toUpperCase();
-
-
-        alert("✅ Profile updated successfully!");
+        alert(
+            "✅ Profile updated successfully!"
+        );
 
     }
 
     catch (error) {
 
-        console.error("Profile error:", error);
+        console.error(
+            "Profile update error:",
+            error
+        );
 
         alert(
             "❌ Unable to connect to server."
         );
-
     }
-
 }
+
+
+/* =========================
+   LOGOUT
+========================= */
 
 function logout() {
 
@@ -395,11 +439,9 @@ function logout() {
 
     window.location.href =
         "login.html";
-
 }
 
 </script>
-
 </body>
 
 </html>
