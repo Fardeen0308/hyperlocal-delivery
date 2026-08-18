@@ -231,10 +231,6 @@ if (!userData || userData === "undefined" || userData === "null") {
     }
 }
 
-
-   
-
-
 /* =========================
    DISPLAY PROFILE
 ========================= */
@@ -320,15 +316,7 @@ async function editProfile() {
     }
 
 
-    if (!user || !user.id) {
-
-        alert("Please login again.");
-
-        window.location.href = "login.html";
-
-        return;
-    }
-
+    
 
     const newName = prompt(
         "Enter your name:",
