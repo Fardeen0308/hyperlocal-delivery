@@ -1,14 +1,3 @@
-const user = JSON.parse(localStorage.getItem("user"));
-
-if (!user) {
-    window.location.href = "login.html";
-}
-
-if (user && user.role !== "customer") {
-    alert("Access Denied");
-    window.location.href = "login.html";
-}
-
 async function loadOrders() {
 
     const response = await fetch(
