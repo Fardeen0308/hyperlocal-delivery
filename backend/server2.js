@@ -297,11 +297,13 @@ app.post("/login", async (req, res) => {
         const match = await bcrypt.compare(password, user.password);
 
         if (match) {
-            return res.json({
-                message: "Login Successful",
-                user
-            });
-        }
+    const { password, ...safeUser } = user;
+
+    return res.json({
+        message: "Login Successful",
+        user: safeUser
+    });
+}
     }
 
     // Check deliveryPartners table
@@ -316,14 +318,16 @@ app.post("/login", async (req, res) => {
         const match = await bcrypt.compare(password, partner.password);
 
         if (match) {
-            return res.json({
-                message: "Login Successful",
-                user: {
-                    ...partner,
-                    role: "delivery"
-                }
-            });
+    const { password, ...safePartner } = partner;
+
+    return res.json({
+        message: "Login Successful",
+        user: {
+            ...safePartner,
+            role: "delivery"
         }
+    });
+}
     }
 console.log("Login Email:", email);
     // Check admins table
@@ -338,13 +342,15 @@ if (admin) {
     // Temporary plain-text password check
     if (password === admin.password) {
 
-        return res.json({
-            message: "Login Successful",
-            user: {
-                ...admin,
-                role: "admin"
-            }
-        });
+        const { password, ...safeAdmin } = admin;
+
+return res.json({
+    message: "Login Successful",
+    user: {
+        ...safeAdmin,
+        role: "admin"
+    }
+});
 
     }
 
