@@ -275,8 +275,8 @@ console.log("Hash created:", hashedPassword);
     }
 
     res.json({
-        message: "Signup Successful",
-        user: data[0]
+        message: "Signup Successful"
+        
     });
 
 });
