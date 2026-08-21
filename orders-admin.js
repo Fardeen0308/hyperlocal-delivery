@@ -1,4 +1,9 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const token = localStorage.getItem("token");
+
+const authHeaders = {
+    "Authorization": "Bearer " + token
+};
 
 if (!user || user.role !== "admin") {
     alert("Access Denied");
@@ -10,9 +15,11 @@ let deliveryPartners = [];
 async function loadDeliveryPartners() {
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/delivery-partners"
-    );
-
+    "https://hyperlocal-backend-84rs.onrender.com/delivery-partners",
+    {
+        headers: authHeaders
+    }
+);
     const partners = await response.json();
 
     deliveryPartners = partners.filter(
@@ -24,8 +31,11 @@ async function loadDeliveryPartners() {
 async function loadOrders() {
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/orders"
-    );
+    "https://hyperlocal-backend-84rs.onrender.com/orders",
+    {
+        headers: authHeaders
+    }
+);
 
     const orders = await response.json();
 
@@ -166,15 +176,17 @@ async function updateStatus(id) {
     document.getElementById("status-" + id).value;
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
-        {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ status })
-        }
-    );
+    "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
+    {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ status })
+    }
+);
+    
 
     const data = await response.json();
 
@@ -189,11 +201,12 @@ async function deleteOrder(id) {
     if (!confirm("Delete this order?")) return;
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
-        {
-            method: "DELETE"
-        }
-    );
+    "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
+    {
+        method: "DELETE",
+        headers: authHeaders
+    }
+);
 
     const data = await response.json();
 
@@ -212,19 +225,20 @@ async function assignPartner(orderId) {
         deliveryPartners.find(p => p.id == partnerId);
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/assign-delivery/" + orderId,
-        {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                id: partner.id,
-                name: partner.name,
-                email: partner.email
-            })
-        }
-    );
+    "https://hyperlocal-backend-84rs.onrender.com/assign-delivery/" + orderId,
+    {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+            id: partner.id,
+            name: partner.name,
+            email: partner.email
+        })
+    }
+);
 
     const data = await response.json();
 
@@ -311,8 +325,11 @@ window.open("invoice.html?id="+id,"_blank");
 
 async function viewOrder(id){
 
-const response=await fetch(
-"https://hyperlocal-backend-84rs.onrender.com/orders"
+const response = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/orders",
+    {
+        headers: authHeaders
+    }
 );
 
 const orders=await response.json();

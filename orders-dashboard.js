@@ -1,3 +1,8 @@
+const token = localStorage.getItem("token");
+
+const authHeaders = {
+    "Authorization": "Bearer " + token
+};
 async function loadOrders() {
 
     const response = await fetch(

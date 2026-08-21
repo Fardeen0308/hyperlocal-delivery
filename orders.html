@@ -39,19 +39,24 @@ border-radius:15px;">
 <script>
 
     const user = JSON.parse(localStorage.getItem("user"));
+const token = localStorage.getItem("token");
 
-if (!user) {
+if (!user || user.role !== "customer" || !token) {
     window.location.href = "login.html";
 }
-
 async function loadOrders() {
 
     const user =
     JSON.parse(localStorage.getItem("user"));
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/myorders/" + user.email
-    );
+    "https://hyperlocal-backend-84rs.onrender.com/myorders/" + user.email,
+    {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    }
+);
 
     const orders = await response.json();
 
@@ -214,12 +219,15 @@ async function cancelOrder(id){
 
     if(!ok) return;
 
-    const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
-        {
-            method:"DELETE"
+   const response = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/orders/" + id + "/cancel",
+    {
+        method: "POST",
+        headers: {
+            "Authorization": "Bearer " + token
         }
-    );
+    }
+);
 
     const data = await response.json();
 
@@ -290,7 +298,12 @@ async function trackDeliveryBoy(){
 JSON.parse(localStorage.getItem("user"));
 
 const response = await fetch(
-"https://hyperlocal-backend-84rs.onrender.com/myorders/" + user.email
+    "https://hyperlocal-backend-84rs.onrender.com/myorders/" + user.email,
+    {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    }
 );
 
 const orders = await response.json();
@@ -377,8 +390,9 @@ async function rateDeliveryBoy(id){
         {
             method: "POST",
             headers:{
-                "Content-Type":"application/json"
-            },
+    "Content-Type":"application/json",
+    "Authorization":"Bearer " + token
+},
             body: JSON.stringify({
                 rating
             })

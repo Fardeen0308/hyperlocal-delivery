@@ -34,8 +34,9 @@ if (buyNowProduct) {
         {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
-            },
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + localStorage.getItem("token")
+},
           body: JSON.stringify({
     customerName,
     email: user.email,
@@ -66,10 +67,11 @@ if (buyNowProduct) {
 async function payNow(totalAmount) {
 
     const response = await fetch("https://hyperlocal-backend-84rs.onrender.com/create-order", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + localStorage.getItem("token")
+    },
         body: JSON.stringify({
             amount: totalAmount
         })
