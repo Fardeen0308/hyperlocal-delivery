@@ -50,6 +50,11 @@ alert(JSON.stringify(data));
             JSON.stringify(data.user)
         );
 
+        localStorage.setItem(
+        "token",
+        data.token
+    );
+
         alert("Login Successful");
 
        if(data.user.role === "customer"){
