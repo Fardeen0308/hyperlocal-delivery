@@ -95,7 +95,11 @@ app.get("/products", async (req, res) => {
 
 });
 
-app.delete("/products/:id", async (req, res) => {
+app.delete(
+    "/products/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { error } = await supabase
         .from("products")
@@ -114,7 +118,11 @@ app.delete("/products/:id", async (req, res) => {
 
 });
 
-app.put("/products/:id", async (req, res) => {
+app.put(
+    "/products/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { error } = await supabase
         .from("products")
@@ -162,7 +170,11 @@ app.post("/upload", upload.single("image"), async (req, res) => {
 
 });
 
-app.post("/create-order", async (req, res) => {
+app.post(
+    "/create-order",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
 
     try {
 
@@ -338,8 +350,19 @@ app.post("/login", async (req, res) => {
         if (match) {
     const { password, ...safePartner } = partner;
 
+    const token = jwt.sign(
+        {
+            id: partner.id,
+            role: "delivery",
+            email: partner.email
+        },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+    );
+
     return res.json({
         message: "Login Successful",
+        token,
         user: {
             ...safePartner,
             role: "delivery"
@@ -362,8 +385,19 @@ if (admin) {
 
         const { password, ...safeAdmin } = admin;
 
+const token = jwt.sign(
+    {
+        id: admin.id,
+        role: "admin",
+        email: admin.email
+    },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+);
+
 return res.json({
     message: "Login Successful",
+    token,
     user: {
         ...safeAdmin,
         role: "admin"
@@ -379,7 +413,11 @@ return res.json({
     });
 
 });
-app.post("/orders", async (req, res) => {
+app.post(
+    "/orders",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
 
     const deliveryOtp =
 Math.floor(1000 + Math.random() * 9000).toString();
@@ -388,7 +426,7 @@ Math.floor(1000 + Math.random() * 9000).toString();
         .from("orders")
         .insert([{
             customerName: req.body.customerName,
-            email: req.body.email,
+            email: req.user.email,
             phone: req.body.phone,
             address: req.body.address,
             products: req.body.products,
@@ -456,8 +494,17 @@ console.log("After sendNotification");
 
 });
 
-app.get("/myorders/:email", async (req, res) => {
+app.get(
+    "/myorders/:email",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
 
+        if (req.params.email !== req.user.email) {
+    return res.status(403).json({
+        message: "Access denied"
+    });
+}
     const { data, error } = await supabase
         .from("orders")
         .select("*")
@@ -473,7 +520,11 @@ app.get("/myorders/:email", async (req, res) => {
 
 });
 
-app.delete("/orders/:id", async (req, res) => {
+app.delete(
+    "/orders/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { error } = await supabase
         .from("orders")
@@ -492,7 +543,72 @@ app.delete("/orders/:id", async (req, res) => {
 
 });
 
-app.get("/orders", async (req, res) => {
+app.post(
+    "/orders/:id/cancel",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
+
+        try {
+
+            const { data: order, error: fetchError } = await supabase
+                .from("orders")
+                .select("*")
+                .eq("id", req.params.id)
+                .single();
+
+            if (fetchError || !order) {
+                return res.status(404).json({
+                    message: "Order not found"
+                });
+            }
+
+            if (order.email !== req.user.email) {
+                return res.status(403).json({
+                    message: "Access denied"
+                });
+            }
+
+            if (order.status === "Delivered") {
+                return res.status(400).json({
+                    message: "Delivered orders cannot be cancelled"
+                });
+            }
+
+            const { error } = await supabase
+                .from("orders")
+                .update({
+                    status: "Cancelled"
+                })
+                .eq("id", req.params.id);
+
+            if (error) {
+                return res.status(500).json({
+                    message: error.message
+                });
+            }
+
+            res.json({
+                message: "Order Cancelled Successfully"
+            });
+
+        } catch (error) {
+
+            console.error("Cancel order error:", error);
+
+            res.status(500).json({
+                message: "Server error"
+            });
+
+        }
+    }
+);
+
+app.get(
+    "/orders",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { data, error } = await supabase
         .from("orders")
@@ -509,7 +625,11 @@ app.get("/orders", async (req, res) => {
 
 });
 
-app.put("/orders/:id", async (req, res) => {
+app.put(
+    "/orders/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     // First, get the order
     const { data: order, error: fetchError } = await supabase
@@ -572,8 +692,11 @@ app.put("/orders/:id", async (req, res) => {
     });
 
 });
-app.post("/delivery-partners", async (req, res) => {
-
+app.post(
+    "/delivery-partners",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
     try {
 
         const {
@@ -631,7 +754,11 @@ app.post("/delivery-partners", async (req, res) => {
     }
 
 });
-app.get("/delivery-partners", async (req, res) => {
+app.get(
+    "/delivery-partners",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { data, error } = await supabase
         .from("deliveryPartners")
@@ -647,7 +774,11 @@ app.get("/delivery-partners", async (req, res) => {
 
 });
 
-app.delete("/delivery-partners/:id", async (req, res) => {
+app.delete(
+    "/delivery-partners/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { id } = req.params;
 
@@ -668,7 +799,11 @@ app.delete("/delivery-partners/:id", async (req, res) => {
 
 });
 
-app.put("/assign-delivery/:id", async (req, res) => {
+app.put(
+    "/assign-delivery/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     try {
 
@@ -740,8 +875,11 @@ app.put("/assign-delivery/:id", async (req, res) => {
     }
 
 });
-app.put("/delivery-partners/status", async (req,res)=>{
-
+app.put(
+    "/delivery-partners/status",
+    authenticateToken,
+    requireRole("delivery"),
+    async (req, res) => {
     const { email, status } = req.body;
 
     const { error } = await supabase
@@ -761,7 +899,11 @@ app.put("/delivery-partners/status", async (req,res)=>{
 
 });
 
-app.post("/location", async (req, res) => {
+app.post(
+    "/location",
+    authenticateToken,
+    requireRole("delivery"),
+    async (req, res) => {
 
     const { email, lat, lng } = req.body;
 
@@ -787,8 +929,10 @@ app.post("/location", async (req, res) => {
 
 });
 
-app.get("/location/:email", async (req, res) => {
-
+app.get(
+    "/location/:email",
+    authenticateToken,
+    async (req, res) => {
     const { data, error } = await supabase
         .from("locations")
         .select("*")
@@ -805,7 +949,11 @@ app.get("/location/:email", async (req, res) => {
 
 });
 
-app.post("/verify-otp/:id", async (req, res) => {
+app.post(
+    "/verify-otp/:id",
+    authenticateToken,
+    requireRole("delivery"),
+    async (req, res) => {
 
     try {
 
@@ -931,7 +1079,15 @@ app.post("/verify-otp/:id", async (req, res) => {
     }
 
 });
-app.get("/notifications/:email", async (req, res) => {
+app.get(
+    "/notifications/:email",
+    authenticateToken,
+    async (req, res) => {
+        if (req.params.email !== req.user.email) {
+    return res.status(403).json({
+        message: "Access denied"
+    });
+}
 
     const { data, error } = await supabase
         .from("notifications")
@@ -949,8 +1105,15 @@ app.get("/notifications/:email", async (req, res) => {
 
 });
 
-app.put("/notifications/read/:email", async (req, res) => {
-
+app.put(
+    "/notifications/read/:email",
+    authenticateToken,
+    async (req, res) => {
+        if (req.params.email !== req.user.email) {
+    return res.status(403).json({
+        message: "Access denied"
+    });
+}
     const { error } = await supabase
         .from("notifications")
         .update({
@@ -970,7 +1133,11 @@ app.put("/notifications/read/:email", async (req, res) => {
 
 });
 
-app.post("/rate-delivery/:id", async (req, res) => {
+app.post(
+    "/rate-delivery/:id",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
 
     const { data: order, error } = await supabase
         .from("orders")
@@ -978,11 +1145,16 @@ app.post("/rate-delivery/:id", async (req, res) => {
         .eq("id", req.params.id)
         .single();
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
-    }
+    if (order.email !== req.user.email) {
+    return res.status(403).json({
+        message: "Access denied"
+    });
+}
+if (order.status !== "Delivered") {
+    return res.status(400).json({
+        message: "You can rate only after delivery"
+    });
+}
 
     if (order.isRated) {
         return res.json({
@@ -1094,7 +1266,16 @@ orders.forEach(order => {
     });
 
 });
-app.get("/delivery-earnings/:email", async (req, res) => {
+app.get(
+    "/delivery-earnings/:email",
+    authenticateToken,
+    requireRole("delivery"),
+    async (req, res) => {
+        if (req.params.email !== req.user.email) {
+    return res.status(403).json({
+        message: "Access denied"
+    });
+}
 
     const { data: orders, error } = await supabase
         .from("orders")
@@ -1152,9 +1333,18 @@ app.get("/delivery-earnings/:email", async (req, res) => {
 
 });
 
-app.post("/save-fcm-token", async (req, res) => {
+app.post(
+    "/save-fcm-token",
+    authenticateToken,
+    async (req, res) => {
 
     const { email, role, token } = req.body;
+
+    if (email !== req.user.email) {
+    return res.status(403).json({
+        message: "Access denied"
+    });
+}
 
     let table = role === "delivery"
         ? "deliveryPartners"
@@ -1179,7 +1369,11 @@ app.post("/save-fcm-token", async (req, res) => {
 
 });
 
-app.post("/coupons", async (req, res) => {
+app.post(
+    "/coupons",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { code, discount, type, minOrder, expiry } = req.body;
 
@@ -1225,7 +1419,11 @@ app.get("/coupons", async (req, res) => {
 
 });
 
-app.delete("/coupons/:id", async (req, res) => {
+app.delete(
+    "/coupons/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { error } = await supabase
         .from("coupons")
@@ -1292,86 +1490,12 @@ app.post("/validate-coupon", async (req, res) => {
 
 });
 
-app.get("/admin-analytics", async (req, res) => {
 
-    const { data: orders } = await supabase
-        .from("orders")
-        .select("*");
-
-    const { data: partners } = await supabase
-        .from("deliveryPartners")
-        .select("*");
-
-    const { data: users } = await supabase
-        .from("users")
-        .select("*");
-
-    let totalRevenue = 0;
-
-    let pending = 0;
-    let preparing = 0;
-    let outForDelivery = 0;
-    let delivered = 0;
-
-    let productCount = {};
-
-    orders.forEach(order => {
-
-        totalRevenue += Number(order.grandTotal || 0);
-
-        if(order.status === "Pending") pending++;
-
-        if(order.status === "Preparing") preparing++;
-
-        if(order.status === "Out for Delivery") outForDelivery++;
-
-        if(order.status === "Delivered") delivered++;
-
-        if(order.items){
-
-            order.items.forEach(item=>{
-
-                productCount[item.name] =
-                (productCount[item.name] || 0)+1;
-
-            });
-
-        }
-
-    });
-
-    const bestSellingProducts =
-    Object.entries(productCount)
-    .sort((a,b)=>b[1]-a[1])
-    .slice(0,5);
-
-    res.json({
-
-        totalOrders: orders.length,
-
-        totalRevenue,
-
-        totalCustomers:
-        users.filter(u=>u.role==="customer").length,
-
-        totalDeliveryPartners:
-        partners.length,
-
-        pending,
-
-        preparing,
-
-        outForDelivery,
-
-        delivered,
-
-        bestSellingProducts
-
-    });
-
-});
-
-app.get("/users", async (req, res) => {
+app.get(
+    "/users",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { data, error } = await supabase
         .from("users")
@@ -1387,7 +1511,11 @@ app.get("/users", async (req, res) => {
 
 });
 
-app.delete("/users/:id", async (req,res)=>{
+app.delete(
+    "/users/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const {id}=req.params;
 
@@ -1408,7 +1536,11 @@ app.delete("/users/:id", async (req,res)=>{
 
 });
 
-app.put("/users/:id/block", async (req, res) => {
+app.put(
+    "/users/:id/block",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { id } = req.params;
     const { blocked } = req.body;
@@ -1430,9 +1562,16 @@ app.put("/users/:id/block", async (req, res) => {
 
 });
 
-app.get("/users/:id", async (req, res) => {
-
+app.get(
+    "/users/:id",
+    authenticateToken,
+    async (req, res) => {
     const { id } = req.params;
+    if (req.user.role !== "admin" && id !== req.user.id) {
+    return res.status(403).json({
+        message: "Access denied"
+    });
+}
 
     const { data, error } = await supabase
         .from("users")
@@ -1450,7 +1589,11 @@ app.get("/users/:id", async (req, res) => {
 
 });
 
-app.get("/settings", async (req, res) => {
+app.get(
+    "/settings",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { data, error } = await supabase
         .from("settings")
@@ -1468,8 +1611,11 @@ app.get("/settings", async (req, res) => {
 
 });
 
-app.put("/settings", async (req, res) => {
-
+app.put(
+    "/settings",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
     const {
         websiteName,
         supportEmail,
@@ -1499,11 +1645,21 @@ app.put("/settings", async (req, res) => {
 
 });
 
-app.put("/users/:id", async (req, res) => {
+app.put(
+    "/users/:id",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
 
     try {
 
         const { id } = req.params;
+
+        if (id !== req.user.id) {
+    return res.status(403).json({
+        message: "Access denied"
+    });
+}
 
         const {
             name,
