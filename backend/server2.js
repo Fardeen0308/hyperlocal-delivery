@@ -38,7 +38,11 @@ app.get("/", (req, res) => {
     res.send("HyperLocal Backend Running with Supabase 🚀");
 });
 
-app.post("/products", async (req, res) => {
+app.post(
+    "/products",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
     try {
 
         const { data, error } = await supabase
