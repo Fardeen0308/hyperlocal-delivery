@@ -8,6 +8,7 @@ const fs = require("fs");
 
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const { authenticateToken, requireRole } = require("./authMiddleware");
 const JWT_SECRET = process.env.JWT_SECRET;
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
@@ -1014,7 +1015,11 @@ app.post("/rate-delivery/:id", async (req, res) => {
 
 });
 
-app.get("/admin-analytics", async (req, res) => {
+app.get(
+    "/admin-analytics",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
 
     const { data: orders } = await supabase
         .from("orders")
