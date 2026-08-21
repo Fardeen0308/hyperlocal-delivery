@@ -7,6 +7,8 @@ const multer = require("multer");
 const fs = require("fs");
 
 const express = require("express");
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET;
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
 
@@ -299,8 +301,19 @@ app.post("/login", async (req, res) => {
         if (match) {
     const { password, ...safeUser } = user;
 
+    const token = jwt.sign(
+        {
+            id: user.id,
+            role: user.role,
+            email: user.email
+        },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+    );
+
     return res.json({
         message: "Login Successful",
+        token,
         user: safeUser
     });
 }

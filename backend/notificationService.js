@@ -2,9 +2,17 @@ const { initializeApp, cert } = require("firebase-admin/app");
 const { getMessaging } = require("firebase-admin/messaging");
 const fs = require("fs");
 
-const serviceAccount = JSON.parse(
-    fs.readFileSync("/etc/secrets/firebase-service-account.json", "utf8")
+const path = require("path");
+
+const serviceAccountPath = path.join(
+    __dirname,
+    "firebase-service-account.json"
 );
+
+const serviceAccount = JSON.parse(
+    fs.readFileSync(serviceAccountPath, "utf8")
+);
+
 
 initializeApp({
     credential: cert(serviceAccount)
