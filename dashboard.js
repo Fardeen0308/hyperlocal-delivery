@@ -1,3 +1,8 @@
+const token = localStorage.getItem("token");
+
+const authHeaders = {
+    "Authorization": "Bearer " + token
+};
 let imageUrl = "";
 
 // Add Product
@@ -147,9 +152,12 @@ async function loadStats(){
     products.length;
 
     // Orders
-    const orderRes =
-    await fetch("https://hyperlocal-backend-84rs.onrender.com/orders");
-
+   const response = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/orders",
+    {
+        headers: authHeaders
+    }
+);
     const orders =
     await orderRes.json();
 
