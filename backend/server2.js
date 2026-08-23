@@ -1655,7 +1655,7 @@ app.put(
 
         const { id } = req.params;
 
-        if (id !== req.user.id) {
+        if (String(id) !== String(req.user.id)) {
     return res.status(403).json({
         message: "Access denied"
     });
