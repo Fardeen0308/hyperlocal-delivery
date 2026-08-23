@@ -1,9 +1,18 @@
+const token = localStorage.getItem("token");
+
+const authHeaders = {
+    "Authorization": "Bearer " + token
+};
 const usersGrid = document.getElementById("usersGrid");
 
 async function loadUsers() {
 
-    const response = await fetch("https://hyperlocal-backend-84rs.onrender.com/users");
-
+    const response = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/users",
+    {
+        headers: authHeaders
+    }
+);
     const users = await response.json();
 
     usersGrid.innerHTML = "";
