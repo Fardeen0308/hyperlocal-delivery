@@ -1,29 +1,4 @@
-const existingUser = localStorage.getItem("user");
-const existingToken = localStorage.getItem("token");
 
-if (
-    existingUser &&
-    existingUser !== "undefined" &&
-    existingUser !== "null" &&
-    existingToken &&
-    existingToken !== "undefined" &&
-    existingToken !== "null"
-) {
-
-    const user = JSON.parse(existingUser);
-
-    if (user.role === "customer") {
-        window.location.replace("index.html");
-    }
-
-    else if (user.role === "delivery") {
-        window.location.replace("delivery-dashboard.html");
-    }
-
-    else if (user.role === "admin") {
-        window.location.replace("admin-dashboard.html");
-    }
-}
 async function login() {
 
     const email =
