@@ -176,7 +176,12 @@ async function loadStats(){
 
     // Users
     const userRes =
-    await fetch("https://hyperlocal-backend-84rs.onrender.com/users");
+    await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/users",
+        {
+            headers: authHeaders
+        }
+    );
 
     const users =
     await userRes.json();
