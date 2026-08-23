@@ -134,13 +134,16 @@ document.querySelector(
 
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/orders",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
+    "https://hyperlocal-backend-84rs.onrender.com/orders",
+    {
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        },
+
+        body: JSON.stringify({
                 customerName,
                 phone,
                 address,
