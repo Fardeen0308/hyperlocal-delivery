@@ -6,8 +6,11 @@ const authHeaders = {
 async function loadOrders() {
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/orders"
-    );
+    "https://hyperlocal-backend-84rs.onrender.com/orders",
+    {
+        headers: authHeaders
+    }
+);
 
     const orders = await response.json();
 
@@ -65,7 +68,8 @@ async function updateStatus(id){
         "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
 
         {
-            method:"PUT"
+            method:"PUT",
+            headers:authHeaders
         }
 
     );
@@ -87,7 +91,8 @@ async function deleteOrder(id){
         "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
 
         {
-            method:"DELETE"
+            method:"DELETE",
+             headers:authHeaders
         }
 
     );

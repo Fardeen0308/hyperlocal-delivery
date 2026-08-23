@@ -455,16 +455,23 @@
 
 </div>
 
-
+<script src="auth.js"></script>
 <!-- ================= JAVASCRIPT ================= -->
 
 <script>
 
 async function loadAnalytics(){
 
-    const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/admin-analytics"
-    );
+    const token = localStorage.getItem("token");
+
+const response = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/admin-analytics",
+    {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    }
+);
 
     const data = await response.json();
 
