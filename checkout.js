@@ -1,7 +1,8 @@
 const user = JSON.parse(localStorage.getItem("user"));
+const token = localStorage.getItem("token");
 
-if (!user || user.role !== "customer") {
-    alert("Access Denied");
+if (!user || user.role !== "customer" || !token) {
+    alert("Please login first");
     window.location.href = "login.html";
 }
 async function placeOrder() {
@@ -35,7 +36,7 @@ if (buyNowProduct) {
             method: "POST",
             headers: {
     "Content-Type": "application/json",
-    "Authorization": "Bearer " + localStorage.getItem("token")
+    "Authorization": "Bearer " + token
 },
           body: JSON.stringify({
     customerName,
@@ -56,12 +57,24 @@ if (buyNowProduct) {
 
     const data = await response.json();
 
-    alert(data.message);
+if (!response.ok) {
+    alert(data.message || "Failed to place order");
 
-    localStorage.removeItem("cart");
-    localStorage.removeItem("buyNowProduct");
+    if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+    }
 
-    window.location.href = "orders.html";
+    return;
+}
+
+alert(data.message || "Order placed successfully!");
+
+localStorage.removeItem("cart");
+localStorage.removeItem("buyNowProduct");
+
+window.location.href = "orders.html";
 }
 
 async function payNow(totalAmount) {
