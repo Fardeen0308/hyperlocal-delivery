@@ -52,6 +52,7 @@ async function loadOrders() {
     const response = await fetch(
     "https://hyperlocal-backend-84rs.onrender.com/myorders/" + user.email,
     {
+        cache: "no-store",
         headers: {
             "Authorization": "Bearer " + token
         }
@@ -93,6 +94,12 @@ if (order.status == "Delivered") {
     preparing = "✅ 👨‍🍳 Preparing";
     delivery = "✅ 🛵 Out for Delivery";
     delivered = "✅ 🏠 Delivered";
+}
+if (order.status == "Cancelled") {
+    confirmed = "❌ Order Cancelled";
+    preparing = "";
+    delivery = "";
+    delivered = "";
 }
 
 let confirmedClass = "";
