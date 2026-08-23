@@ -1,3 +1,8 @@
+const token = localStorage.getItem("token");
+
+const authHeaders = {
+    "Authorization": "Bearer " + token
+};
 const user = JSON.parse(localStorage.getItem("user"));
 
 if (!user || user.role !== "admin") {
@@ -8,9 +13,11 @@ if (!user || user.role !== "admin") {
 async function loadPartners() {
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/delivery-partners"
-    );
-
+    "https://hyperlocal-backend-84rs.onrender.com/delivery-partners",
+    {
+        headers: authHeaders
+    }
+);
     const partners = await response.json();
 
     document.getElementById("totalPartners").innerText =
