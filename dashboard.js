@@ -159,7 +159,7 @@ async function loadStats(){
     }
 );
     const orders =
-    await orderRes.json();
+    await response.json();
 
     document.getElementById("orderCount").innerText =
     orders.length;
