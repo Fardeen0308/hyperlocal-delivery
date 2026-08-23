@@ -1,6 +1,14 @@
 const existingUser = localStorage.getItem("user");
+const existingToken = localStorage.getItem("token");
 
-if (existingUser && existingUser !== "undefined" && existingUser !== "null") {
+if (
+    existingUser &&
+    existingUser !== "undefined" &&
+    existingUser !== "null" &&
+    existingToken &&
+    existingToken !== "undefined" &&
+    existingToken !== "null"
+) {
 
     const user = JSON.parse(existingUser);
 
