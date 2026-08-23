@@ -29,8 +29,7 @@
         <a href="delivery.html">🛵 Delivery</a>
         <a href="users.html">👥 Users</a>
         <a href="index.html">🏠 Website</a>
-        <a href="admin.html">🚪 Logout</a>
-
+        <a href="#" onclick="logoutAdmin()">🚪 Logout</a>
     </div>
 
 
@@ -661,6 +660,13 @@ const today =
 document.getElementById("todayDate").innerHTML =
     today.toDateString();
 
+
+function logoutAdmin() {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+
+    window.location.replace("admin.html");
+}
 </script>
 
 
