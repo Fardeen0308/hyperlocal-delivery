@@ -252,30 +252,34 @@ let routingControl;
 
 function loadMap(){
 
-    map = L.map("map").setView([customerLat,customerLng],13);
+    if (map) {
+        return;
+    }
+
+    map = L.map("map").setView([customerLat, customerLng], 13);
 
     L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
-            maxZoom:19
+            maxZoom: 19
         }
     ).addTo(map);
 
     // Customer
-    L.marker([customerLat,customerLng])
+    L.marker([customerLat, customerLng])
         .addTo(map)
         .bindPopup("🏠 Customer");
 
     // Delivery Partner
-    deliveryMarker = L.marker([17.3950,78.4967])
+    deliveryMarker = L.marker([17.3950, 78.4967])
         .addTo(map)
         .bindPopup("🛵 Delivery Partner");
 
-    setInterval(trackDeliveryBoy,5000);
+    setInterval(trackDeliveryBoy, 5000);
 
-trackDeliveryBoy();
-
+    trackDeliveryBoy();
 }
+
 
 let customerLat;
 let customerLng;
