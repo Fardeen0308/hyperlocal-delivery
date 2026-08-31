@@ -106,29 +106,43 @@ async function deleteProduct(id){
 
 loadProducts();
 
-async function editProduct(id){
+async function editProduct(id) {
 
     const name = prompt("New Product Name");
+    if (name === null) return;
 
     const price = prompt("New Price");
+    if (price === null) return;
 
     const category = prompt("New Category");
+    if (category === null) return;
 
     const stock = prompt("New Stock");
+    if (stock === null) return;
+
+    if (!name.trim() || !price.trim() || !category.trim() || !stock.trim()) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    if (isNaN(Number(price)) || isNaN(Number(stock))) {
+        alert("Price and Stock must be numbers");
+        return;
+    }
 
     const response = await fetch(
-    `https://hyperlocal-backend-84rs.onrender.com/products/${id}`,
+        `https://hyperlocal-backend-84rs.onrender.com/products/${id}`,
         {
-            method:"PUT",
-            headers:{
-    "Content-Type":"application/json",
-    "Authorization":"Bearer " + token
-},
-            body:JSON.stringify({
-                name,
-                price,
-                category,
-                stock
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({
+                name: name.trim(),
+                price: Number(price),
+                category: category.trim(),
+                stock: Number(stock)
             })
         }
     );
@@ -137,10 +151,10 @@ async function editProduct(id){
 
     alert(data.message);
 
-    loadProducts();
-
+    if (response.ok) {
+        loadProducts();
+    }
 }
-
 async function loadStats(){
 
     // Products
