@@ -1723,6 +1723,8 @@ app.get(
             .single();
 
         if (error) {
+            console.log("MY STORE ERROR:", error);
+
             return res.status(404).json({
                 message: "Store not found"
             });
