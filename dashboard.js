@@ -195,3 +195,11 @@ async function loadStats(){
 
 loadStats();
 
+function logout() {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+
+    alert("Logged out successfully");
+
+    window.location.href = "login.html";
+}
