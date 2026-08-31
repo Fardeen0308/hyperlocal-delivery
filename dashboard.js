@@ -24,8 +24,9 @@ document.getElementById("productStock").value;
     const response = await fetch("https://hyperlocal-backend-84rs.onrender.com/products", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
-        },
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + token
+},
         body: JSON.stringify({
             name,
             price,
@@ -116,12 +117,13 @@ async function editProduct(id){
     const stock = prompt("New Stock");
 
     const response = await fetch(
-        'https://hyperlocal-backend-84rs.onrender.com/products/${id}',
+    `https://hyperlocal-backend-84rs.onrender.com/products/${id}`,
         {
             method:"PUT",
             headers:{
-                "Content-Type":"application/json"
-            },
+    "Content-Type":"application/json",
+    "Authorization":"Bearer " + token
+},
             body:JSON.stringify({
                 name,
                 price,
@@ -168,7 +170,7 @@ async function loadStats(){
     let totalSales = 0;
 
     orders.forEach(order=>{
-        totalSales += Number(order.total);
+        totalSales += Number(order.grandTotal || 0);
     });
 
     document.getElementById("sales").innerText =
