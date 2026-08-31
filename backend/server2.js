@@ -1709,6 +1709,28 @@ app.put(
     }
 
 });
+
+app.get(
+    "/my-store",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+
+        const { data, error } = await supabase
+            .from("stores")
+            .select("*")
+            .eq("owner_id", req.user.id)
+            .single();
+
+        if (error) {
+            return res.status(404).json({
+                message: "Store not found"
+            });
+        }
+
+        res.json(data);
+    }
+);
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
