@@ -1716,21 +1716,33 @@ app.get(
     requireRole("admin"),
     async (req, res) => {
 
+        console.log("MY STORE USER:", req.user);
+        console.log("OWNER ID SEARCH:", req.user.id);
+
         const { data, error } = await supabase
             .from("stores")
             .select("*")
-            .eq("owner_id", req.user.id)
-            .single();
+            .eq("owner_id", req.user.id);
+
+        console.log("MY STORE DATA:", data);
+        console.log("MY STORE ERROR:", error);
 
         if (error) {
-            console.log("MY STORE ERROR:", error);
-
-            return res.status(404).json({
-                message: "Store not found"
+            return res.status(500).json({
+                message: error.message,
+                details: error.details,
+                hint: error.hint
             });
         }
 
-        res.json(data);
+        if (!data || data.length === 0) {
+            return res.status(404).json({
+                message: "Store not found",
+                searchedOwnerId: req.user.id
+            });
+        }
+
+        res.json(data[0]);
     }
 );
 app.listen(5000, () => {
