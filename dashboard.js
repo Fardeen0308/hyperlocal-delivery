@@ -217,3 +217,37 @@ function logout() {
 
     window.location.href = "login.html";
 }
+
+async function loadStoreName() {
+
+    try {
+
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/my-store",
+            {
+                headers: authHeaders
+            }
+        );
+
+        const store = await response.json();
+
+        if (!response.ok) {
+            console.log("Store error:", store);
+            document.getElementById("storeName").innerText =
+                "Store not found";
+            return;
+        }
+
+        document.getElementById("storeName").innerText =
+            "🏪 " + store.store_name;
+
+    } catch (error) {
+
+        console.log("Store loading error:", error);
+
+        document.getElementById("storeName").innerText =
+            "Unable to load store";
+    }
+}
+
+loadStoreName();
