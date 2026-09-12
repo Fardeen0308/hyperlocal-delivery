@@ -1765,6 +1765,53 @@ app.get(
         res.json(data[0]);
     }
 );
+
+app.get(
+    "/my-store/products",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+
+        try {
+
+            const { data: store, error: storeError } = await supabase
+                .from("stores")
+                .select("id")
+                .eq("owner_id", req.user.id)
+                .single();
+
+            if (storeError || !store) {
+                return res.status(404).json({
+                    message: "Store not found"
+                });
+            }
+
+            const { data: products, error: productsError } =
+                await supabase
+                    .from("products")
+                    .select("*")
+                    .eq("store_id", store.id)
+                    .order("id", { ascending: false });
+
+            if (productsError) {
+                return res.status(500).json({
+                    message: productsError.message
+                });
+            }
+
+            res.json(products);
+
+        } catch (error) {
+
+            console.error("My store products error:", error);
+
+            res.status(500).json({
+                message: error.message
+            });
+
+        }
+    }
+);
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
