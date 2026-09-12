@@ -43,8 +43,23 @@ app.post(
     authenticateToken,
     requireRole("admin"),
     async (req, res) => {
+
     try {
 
+        // Find the store owned by the logged-in admin
+        const { data: store, error: storeError } = await supabase
+            .from("stores")
+            .select("id")
+            .eq("owner_id", req.user.id)
+            .single();
+
+        if (storeError || !store) {
+            return res.status(404).json({
+                message: "Store not found for this admin"
+            });
+        }
+
+        // Add product to this store
         const { data, error } = await supabase
             .from("products")
             .insert([
@@ -54,22 +69,27 @@ app.post(
                     image: req.body.image,
                     category: req.body.category,
                     stock: req.body.stock || 10,
-                    sold: 0
+                    sold: 0,
+                    store_id: store.id
                 }
             ])
             .select();
 
-            console.log("Supabase Data:", data);
-console.log("Supabase Error:", error);
+        console.log("Supabase Data:", data);
+        console.log("Supabase Error:", error);
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
 
-       res.json({
-    message: "Product Added Successfully",
-    product: data
-});
+        res.json({
+            message: "Product Added Successfully",
+            product: data
+        });
 
     } catch (error) {
+
+        console.error("Add product error:", error);
 
         res.status(500).json({
             success: false,
