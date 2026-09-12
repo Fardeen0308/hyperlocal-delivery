@@ -439,81 +439,136 @@ app.post(
     requireRole("customer"),
     async (req, res) => {
 
-    const deliveryOtp =
-Math.floor(1000 + Math.random() * 9000).toString();
+    try {
 
-    const { data, error } = await supabase
-        .from("orders")
-        .insert([{
-            customerName: req.body.customerName,
-            email: req.user.email,
-            phone: req.body.phone,
-            address: req.body.address,
-            products: req.body.products,
-            subtotal: req.body.subtotal,
-delivery: req.body.delivery,
-gst: req.body.gst,
-discount: req.body.discount,
-grandTotal: req.body.grandTotal,
-            payment: req.body.payment,
-            status: req.body.status,
-            deliveryOtp: deliveryOtp
-        }])
-        .select();
+        const deliveryOtp =
+            Math.floor(1000 + Math.random() * 9000).toString();
 
-    if (error) {
-        return res.status(500).json({
+        // Get product IDs from the cart
+        const productIds = req.body.products.map(product =>
+            product.id
+        );
+
+        // Get store_id from the real products table
+        const { data: dbProducts, error: productError } =
+            await supabase
+                .from("products")
+                .select("id, store_id")
+                .in("id", productIds);
+
+        if (productError) {
+            return res.status(500).json({
+                message: productError.message
+            });
+        }
+
+        // Add store_id to every product saved inside the order
+        const orderProducts = req.body.products.map(product => {
+
+            const dbProduct = dbProducts.find(
+                p => String(p.id) === String(product.id)
+            );
+
+            return {
+                ...product,
+                store_id: dbProduct ? dbProduct.store_id : null
+            };
+
+        });
+
+        // Create order
+        const { data, error } = await supabase
+            .from("orders")
+            .insert([{
+                customerName: req.body.customerName,
+                email: req.user.email,
+                phone: req.body.phone,
+                address: req.body.address,
+
+                // IMPORTANT:
+                // Save products with store_id
+                products: orderProducts,
+
+                subtotal: req.body.subtotal,
+                delivery: req.body.delivery,
+                gst: req.body.gst,
+                discount: req.body.discount,
+                grandTotal: req.body.grandTotal,
+                payment: req.body.payment,
+                status: req.body.status,
+                deliveryOtp: deliveryOtp
+            }])
+            .select();
+
+        if (error) {
+            return res.status(500).json({
+                message: error.message
+            });
+        }
+
+        // Update stock and sold count
+        for (const product of req.body.products) {
+
+            const { data: dbProduct } = await supabase
+                .from("products")
+                .select("stock, sold")
+                .eq("id", product.id)
+                .single();
+
+            if (dbProduct) {
+
+                await supabase
+                    .from("products")
+                    .update({
+                        stock:
+                            Number(dbProduct.stock) -
+                            Number(product.quantity || 1),
+
+                        sold:
+                            Number(dbProduct.sold || 0) +
+                            Number(product.quantity || 1)
+                    })
+                    .eq("id", product.id);
+
+            }
+
+        }
+
+        // Send notification to customer
+        const { data: user } = await supabase
+            .from("users")
+            .select("fcmToken")
+            .eq("email", req.user.email)
+            .single();
+
+        if (user && user.fcmToken) {
+
+            await sendNotification(
+                user.fcmToken,
+                "📦 Order Confirmed",
+                "Your order has been placed successfully."
+            );
+
+        }
+
+        console.log("After sendNotification");
+
+        res.json({
+            message: "Order Placed Successfully",
+            order: data
+        });
+
+    } catch (error) {
+
+        console.error("Create order error:", error);
+
+        res.status(500).json({
             message: error.message
         });
-    }
-
-    for (const product of req.body.products) {
-
-    const { data: dbProduct } = await supabase
-        .from("products")
-        .select("stock, sold")
-        .eq("id", product.id)
-        .single();
-
-    if (dbProduct) {
-
-        await supabase
-            .from("products")
-            .update({
-                stock: Number(dbProduct.stock) - Number(product.quantity || 1),
-                sold: Number(dbProduct.sold || 0) + Number(product.quantity || 1)
-            })
-            .eq("id", product.id);
 
     }
-
-}
-   
-
-const { data: user } = await supabase
-    .from("users")
-    .select("fcmToken")
-    .eq("email", req.body.email)
-    .single();
-
-if (user && user.fcmToken) {
-    await sendNotification(
-        user.fcmToken,
-        "📦 Order Confirmed",
-        "Your order has been placed successfully."
-    );
-}
-
-
-console.log("After sendNotification");
-
-    res.json({
-        message: "Order Placed Successfully",
-        order: data
-    });
 
 });
-
 app.get(
     "/myorders/:email",
     authenticateToken,
