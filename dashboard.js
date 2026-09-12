@@ -168,8 +168,12 @@ async function loadStats(){
 
     // Products
     const productRes =
-    await fetch("https://hyperlocal-backend-84rs.onrender.com/products");
-
+    await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/my-store/products",
+        {
+            headers: authHeaders
+        }
+    );
     const products =
     await productRes.json();
 
