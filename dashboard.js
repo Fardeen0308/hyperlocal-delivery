@@ -44,9 +44,15 @@ document.getElementById("productStock").value;
 }
 
 // Load Products
+// Load Store Products
 async function loadProducts() {
 
-    const res = await fetch("https://hyperlocal-backend-84rs.onrender.com/products");
+    const res = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/my-store/products",
+        {
+            headers: authHeaders
+        }
+    );
 
     const products = await res.json();
 
@@ -72,8 +78,8 @@ async function loadProducts() {
             </button>
 
             <button onclick="editProduct('${product.id}')">
-✏️ Edit
-</button>
+                ✏️ Edit
+            </button>
 
         </div>
         `;
