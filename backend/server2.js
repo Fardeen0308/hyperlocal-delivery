@@ -1812,6 +1812,68 @@ app.get(
         }
     }
 );
+
+app.get(
+    "/my-store/orders",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+
+        try {
+
+            // 1. Find the store owned by the logged-in admin
+            const { data: store, error: storeError } = await supabase
+                .from("stores")
+                .select("id")
+                .eq("owner_id", req.user.id)
+                .single();
+
+            if (storeError || !store) {
+                return res.status(404).json({
+                    message: "Store not found"
+                });
+            }
+
+            // 2. Get all orders
+            const { data: orders, error: ordersError } =
+                await supabase
+                    .from("orders")
+                    .select("*")
+                    .order("id", { ascending: false });
+
+            if (ordersError) {
+                return res.status(500).json({
+                    message: ordersError.message
+                });
+            }
+
+            // 3. Keep only orders containing products from this store
+            const storeOrders = orders.filter(order => {
+
+                if (!Array.isArray(order.products)) {
+                    return false;
+                }
+
+                return order.products.some(product =>
+                    Number(product.store_id) === Number(store.id)
+                );
+
+            });
+
+            res.json(storeOrders);
+
+        } catch (error) {
+
+            console.error("My store orders error:", error);
+
+            res.status(500).json({
+                message: error.message
+            });
+
+        }
+
+    }
+);
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
