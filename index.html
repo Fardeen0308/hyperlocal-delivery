@@ -199,10 +199,13 @@ async function loadProducts() {
 
                 <h2>${product.name}</h2>
 
-                <p class="category-name">
-                    ${product.category}
-                </p>
+<p class="store-name">
+    🏪 ${product.store_name || "Local Store"}
+</p>
 
+<p class="category-name">
+    ${product.category}
+</p>
                 <div class="rating">
                     ⭐ ${
                     product.reviews && product.reviews.length
