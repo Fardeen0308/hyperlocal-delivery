@@ -105,12 +105,6 @@ async function loadOrders() {
 
 
                 <button
-                    onclick="deleteOrder('${order.id}')">
-                    🗑 Delete
-                </button>
-
-
-                <button
                     onclick="viewOrder('${order.id}')">
                     👁 View
                 </button>
@@ -147,7 +141,7 @@ async function updateStatus(id) {
 
     const response = await fetch(
 
-        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
+        "https://hyperlocal-backend-84rs.onrender.com/my-store/orders/" + id,
 
         {
             method: "PUT",
@@ -160,33 +154,6 @@ async function updateStatus(id) {
             body: JSON.stringify({
                 status: newStatus
             })
-        }
-
-    );
-
-    const data = await response.json();
-
-    alert(data.message);
-
-    loadOrders();
-
-}
-
-
-// Delete Order
-async function deleteOrder(id) {
-
-    if (!confirm("Delete this order?")) {
-        return;
-    }
-
-    const response = await fetch(
-
-        "https://hyperlocal-backend-84rs.onrender.com/orders/" + id,
-
-        {
-            method: "DELETE",
-            headers: authHeaders
         }
 
     );

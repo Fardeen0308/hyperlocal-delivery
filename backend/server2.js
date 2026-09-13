@@ -1868,6 +1868,106 @@ app.get(
     }
 );
 
+app.put(
+    "/my-store/orders/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+
+        try {
+
+            // Find the store belonging to this admin
+            const { data: store, error: storeError } =
+                await supabase
+                    .from("stores")
+                    .select("id")
+                    .eq("owner_id", req.user.id)
+                    .single();
+
+            if (storeError || !store) {
+                return res.status(404).json({
+                    message: "Store not found"
+                });
+            }
+
+            // Get the order
+            const { data: order, error: orderError } =
+                await supabase
+                    .from("orders")
+                    .select("*")
+                    .eq("id", req.params.id)
+                    .single();
+
+            if (orderError || !order) {
+                return res.status(404).json({
+                    message: "Order not found"
+                });
+            }
+
+            // Make sure this order contains a product
+            // belonging to this store
+            const belongsToStore =
+                Array.isArray(order.products) &&
+                order.products.some(product =>
+                    Number(product.store_id) === Number(store.id)
+                );
+
+            if (!belongsToStore) {
+                return res.status(403).json({
+                    message: "You cannot manage this order"
+                });
+            }
+
+            // Allowed statuses
+            const allowedStatuses = [
+                "Pending",
+                "Preparing",
+                "Out for Delivery",
+                "Delivered"
+            ];
+
+            if (!allowedStatuses.includes(req.body.status)) {
+                return res.status(400).json({
+                    message: "Invalid order status"
+                });
+            }
+
+            // Update status
+            const { error: updateError } =
+                await supabase
+                    .from("orders")
+                    .update({
+                        status: req.body.status
+                    })
+                    .eq("id", req.params.id);
+
+            if (updateError) {
+                return res.status(500).json({
+                    message: updateError.message
+                });
+            }
+
+            res.json({
+                message: "Order Status Updated Successfully"
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Store order status error:",
+                error
+            );
+
+            res.status(500).json({
+                message: error.message
+            });
+
+        }
+
+    }
+);
+
+
 app.get(
     "/my-store/orders",
     authenticateToken,
