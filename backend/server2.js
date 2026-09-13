@@ -103,7 +103,12 @@ app.get("/products", async (req, res) => {
 
     const { data, error } = await supabase
         .from("products")
-        .select("*");
+        .select(`
+            *,
+            stores (
+                store_name
+            )
+        `);
 
     if (error) {
 
@@ -111,7 +116,14 @@ app.get("/products", async (req, res) => {
 
     }
 
-    res.json(data);
+    const products = data.map(product => ({
+        ...product,
+        store_name: product.stores
+            ? product.stores.store_name
+            : "Local Store"
+    }));
+
+    res.json(products);
 
 });
 
