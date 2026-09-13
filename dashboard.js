@@ -180,9 +180,9 @@ async function loadStats(){
     document.getElementById("productCount").innerText =
     products.length;
 
-    // Orders
-   const response = await fetch(
-    "https://hyperlocal-backend-84rs.onrender.com/orders",
+// Store Orders
+const response = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/my-store/orders",
     {
         headers: authHeaders
     }
