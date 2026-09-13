@@ -4,11 +4,33 @@
     <title>Manage Orders</title>
     <link rel="stylesheet" href="f.css">
 </head>
+
 <body>
 
-<h1>📦Manage Orders</h1>
+<h1>📦 Manage Orders</h1>
 
 <div id="orders"></div>
+
+
+<!-- Order Details Modal -->
+
+<div id="orderModal" class="order-modal">
+
+    <div class="order-modal-content">
+
+        <button
+            class="close-order"
+            onclick="closeOrder()">
+            ✖
+        </button>
+
+        <div id="orderDetails"></div>
+
+    </div>
+
+</div>
+
+
 <script src="auth.js"></script>
 
 <script>
