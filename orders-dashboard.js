@@ -170,59 +170,139 @@ async function updateStatus(id) {
 // View Order
 async function viewOrder(id) {
 
-    const response = await fetch(
+    try {
 
-        "https://hyperlocal-backend-84rs.onrender.com/my-store/orders",
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/my-store/orders",
+            {
+                headers: authHeaders
+            }
+        );
 
-        {
-            headers: authHeaders
+        const orders = await response.json();
+
+        if (!response.ok) {
+            alert(orders.message || "Unable to load order");
+            return;
         }
 
-    );
+        const order = orders.find(
+            o => String(o.id) === String(id)
+        );
 
-    const orders = await response.json();
+        if (!order) {
+            alert("Order not found");
+            return;
+        }
 
-    const order =
-        orders.find(o => String(o.id) === String(id));
 
-    if (!order) {
+        // Products
+        let productsHTML = "";
 
-        alert("Order not found");
+        if (Array.isArray(order.products)) {
 
-        return;
+            order.products.forEach(product => {
+
+                productsHTML += `
+                    <div class="order-product">
+                        <b>${product.name}</b>
+                        × ${product.quantity || 1}
+                        <br>
+                        ₹${Number(product.price || 0).toFixed(2)}
+                    </div>
+                `;
+
+            });
+
+        }
+
+
+        // Order details
+        document.getElementById("orderDetails").innerHTML = `
+
+            <h2>📦 Order #${order.id}</h2>
+
+            <hr>
+
+            <h3>👤 Customer</h3>
+
+            <p>
+                <b>Name:</b>
+                ${order.customerName}
+            </p>
+
+            <p>
+                📞 ${order.phone}
+            </p>
+
+            <p>
+                🏠 ${order.address}
+            </p>
+
+
+            <h3>🛍️ Products</h3>
+
+            ${productsHTML}
+
+
+            <hr>
+
+            <p>
+                <b>Subtotal:</b>
+                ₹${Number(order.subtotal || 0).toFixed(2)}
+            </p>
+
+            <p>
+                <b>Delivery:</b>
+                ₹${Number(order.delivery || 0).toFixed(2)}
+            </p>
+
+            <p>
+                <b>GST:</b>
+                ₹${Number(order.gst || 0).toFixed(2)}
+            </p>
+
+            <p>
+                <b>Discount:</b>
+                ₹${Number(order.discount || 0).toFixed(2)}
+            </p>
+
+            <h2>
+                💰 Grand Total:
+                ₹${Number(order.grandTotal || 0).toFixed(2)}
+            </h2>
+
+
+            <p>
+                💳 <b>Payment:</b>
+                ${order.payment || "N/A"}
+            </p>
+
+            <p>
+                📋 <b>Status:</b>
+                ${order.status}
+            </p>
+
+        `;
+
+
+        // Show popup
+        document.getElementById("orderModal").style.display = "block";
+
+
+    } catch (error) {
+
+        console.error("View order error:", error);
+
+        alert("Unable to load order details");
 
     }
-
-
-    let products = "";
-
-    if (Array.isArray(order.products)) {
-
-        order.products.forEach(product => {
-
-            products += `
-                <p>
-                    ${product.name}
-                    × ${product.quantity || 1}
-                </p>
-            `;
-
-        });
-
-    }
-
-
-    alert(
-        "Order #" + order.id +
-        "\n\nCustomer: " + order.customerName +
-        "\nPhone: " + order.phone +
-        "\nAddress: " + order.address +
-        "\nStatus: " + order.status +
-        "\nTotal: ₹" + Number(order.grandTotal || 0).toFixed(2)
-    );
 
 }
 
+function closeOrder() {
+    document.getElementById("orderModal").style.display = "none";
+}
 
 // Print Invoice
 function printInvoice(id) {
