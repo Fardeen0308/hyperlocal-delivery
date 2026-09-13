@@ -286,16 +286,21 @@ onclick="openProduct(
                  width="200"
                  height="200">
 
-            <h2>${product.name}</h2>
+           <h2>${product.name}</h2>
 
-            <p>${product.category}</p>
+<p class="store-name">
+    🏪 ${product.store_name || "Local Store"}
+</p>
 
+<p>${product.category}</p>
 
-            <p class="price">₹${product.price}</p>
+<p class="price">₹${product.price}</p>
 
 <p class="stock">
 ${product.stock > 0 ? "🟢 In Stock" : "🔴 Out of Stock"}
 </p>
+
+<div class="button-group">
 
 ${product.stock > 0
 ? `
@@ -303,7 +308,8 @@ ${product.stock > 0
 '${product.id}',
 '${product.name}',
 '${product.price}',
-'${product.image}'
+'${product.image}',
+'${product.stock}'
 )">
 🛒 Add To Cart
 </button>
@@ -329,8 +335,6 @@ ${product.stock > 0
 : ""
 }
 
-
-
 <button onclick="event.stopPropagation(); addToWishlist(
 '${product.name}',
 '${product.price}',
@@ -339,11 +343,9 @@ ${product.stock > 0
 ❤️ Wishlist
 </button>
 
-        </div>
-        `;
-    });
+</div>
 
-}
+
 
 
 async function loadBestProducts(){
