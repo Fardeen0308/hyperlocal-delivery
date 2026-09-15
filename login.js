@@ -55,6 +55,11 @@ else if(data.user.role === "admin"){
     window.location.href = "admin-dashboard.html";
 
 }
+else if(data.user.role === "store_owner"){
+
+    window.location.href = "dashboard.html";
+
+}
 else{
 
     window.location.href = "index.html";
