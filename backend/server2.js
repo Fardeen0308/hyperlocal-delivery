@@ -1924,7 +1924,7 @@ app.put(
 app.get(
     "/my-store",
     authenticateToken,
-    requireRole("admin"),
+    requireRole(["admin", "store_owner"]),
     async (req, res) => {
 
         console.log("MY STORE USER:", req.user);
