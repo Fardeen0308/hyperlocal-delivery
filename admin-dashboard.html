@@ -755,6 +755,100 @@ function logoutAdmin() {
 
     window.location.replace("admin.html");
 }
+
+document.getElementById("storeOwnerForm").addEventListener(
+    "submit",
+    async function(event) {
+
+        event.preventDefault();
+
+        const token = localStorage.getItem("token");
+
+        const ownerName =
+            document.getElementById("ownerName").value.trim();
+
+        const ownerEmail =
+            document.getElementById("ownerEmail").value.trim();
+
+        const ownerPhone =
+            document.getElementById("ownerPhone").value.trim();
+
+        const ownerPassword =
+            document.getElementById("ownerPassword").value;
+
+        const storeName =
+            document.getElementById("storeName").value.trim();
+
+        const storeCategory =
+            document.getElementById("storeCategory").value.trim();
+
+        const storeAddress =
+            document.getElementById("storeAddress").value.trim();
+
+        const message =
+            document.getElementById("storeOwnerMessage");
+
+        message.innerText = "Creating Store Owner...";
+
+        try {
+
+            const response = await fetch(
+                "https://hyperlocal-backend-84rs.onrender.com/admin/store-owners",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+
+                    body: JSON.stringify({
+                        name: ownerName,
+                        email: ownerEmail,
+                        phone: ownerPhone,
+                        password: ownerPassword,
+                        storeName: storeName,
+                        category: storeCategory,
+                        address: storeAddress
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+
+                message.innerText =
+                    "❌ " + (data.message || "Failed to create Store Owner");
+
+                return;
+            }
+
+            message.innerText =
+                "✅ Store Owner Created Successfully!";
+
+            alert(
+                "🏪 Store Owner Created Successfully!"
+            );
+
+            document.getElementById(
+                "storeOwnerForm"
+            ).reset();
+
+        } catch (error) {
+
+            console.error(
+                "Store Owner creation error:",
+                error
+            );
+
+            message.innerText =
+                "❌ Server error. Please try again.";
+
+        }
+
+    }
+);
 </script>
 
 
