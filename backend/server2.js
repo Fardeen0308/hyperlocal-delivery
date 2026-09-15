@@ -1960,7 +1960,7 @@ app.get(
 app.get(
     "/my-store/products",
     authenticateToken,
-    requireRole("admin"),
+    requireRole(["admin", "store_owner"]),
     async (req, res) => {
 
         try {
@@ -2107,7 +2107,7 @@ app.put(
 app.get(
     "/my-store/orders",
     authenticateToken,
-    requireRole("admin"),
+    requireRole(["admin", "store_owner"]),
     async (req, res) => {
 
         try {
