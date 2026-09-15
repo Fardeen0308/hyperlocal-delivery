@@ -332,6 +332,130 @@ console.log("Hash created:", hashedPassword);
 
 });
 
+app.post(
+    "/admin/store-owners",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+
+        try {
+
+            const {
+                name,
+                email,
+                phone,
+                password,
+                storeName,
+                category,
+                address
+            } = req.body;
+
+            if (
+                !name ||
+                !email ||
+                !password ||
+                !storeName ||
+                !category ||
+                !address
+            ) {
+                return res.status(400).json({
+                    message: "Please fill all required fields"
+                });
+            }
+
+            // Check whether email already exists
+            const { data: existingUser } = await supabase
+                .from("users")
+                .select("id")
+                .eq("email", email)
+                .maybeSingle();
+
+            if (existingUser) {
+                return res.status(400).json({
+                    message: "User with this email already exists"
+                });
+            }
+
+            // Hash password
+            const hashedPassword =
+                await bcrypt.hash(password, 10);
+
+            // Create Store Owner
+            const { data: newUser, error: userError } =
+                await supabase
+                    .from("users")
+                    .insert([{
+                        name: name,
+                        email: email,
+                        phone: phone,
+                        password: hashedPassword,
+                        role: "store_owner"
+                    }])
+                    .select()
+                    .single();
+
+            if (userError) {
+
+                return res.status(500).json({
+                    message: userError.message
+                });
+
+            }
+
+            // Create Store
+            const { data: newStore, error: storeError } =
+                await supabase
+                    .from("stores")
+                    .insert([{
+                        owner_id: newUser.id,
+                        store_name: storeName,
+                        category: category,
+                        address: address
+                    }])
+                    .select()
+                    .single();
+
+            if (storeError) {
+
+                // Remove user if store creation fails
+                await supabase
+                    .from("users")
+                    .delete()
+                    .eq("id", newUser.id);
+
+                return res.status(500).json({
+                    message: storeError.message
+                });
+
+            }
+
+            res.json({
+                message: "Store Owner Created Successfully",
+                storeOwner: {
+                    id: newUser.id,
+                    name: newUser.name,
+                    email: newUser.email,
+                    role: newUser.role
+                },
+                store: newStore
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Create Store Owner error:",
+                error
+            );
+
+            res.status(500).json({
+                message: error.message
+            });
+
+        }
+
+    }
+);
+
 app.post("/login", async (req, res) => {
 
     const { email, password } = req.body;
