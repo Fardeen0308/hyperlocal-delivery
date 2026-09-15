@@ -203,23 +203,31 @@ const response = await fetch(
     document.getElementById("sales").innerText =
     "₹" + totalSales;
 
-    // Users
+   // Users
+const currentUser =
+    JSON.parse(localStorage.getItem("user"));
+
+if (currentUser && currentUser.role === "store_owner") {
+
+    document.getElementById("userCount").innerText = "—";
+
+} else {
+
     const userRes =
-    await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/users",
-        {
-            headers: authHeaders
-        }
-    );
+        await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/users",
+            {
+                headers: authHeaders
+            }
+        );
 
     const users =
-    await userRes.json();
+        await userRes.json();
 
     document.getElementById("userCount").innerText =
-    users.length;
-
+        users.length;
 }
-
+}
 loadStats();
 
 function logout() {
