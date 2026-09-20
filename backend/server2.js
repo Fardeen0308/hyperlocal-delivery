@@ -806,6 +806,67 @@ const serverGrandTotal =
     serverGst -
     serverDiscount;
 
+    // Verify Razorpay payment directly with Razorpay
+if (
+    req.body.payment !== "Cash on Delivery" &&
+    req.body.status === "Payment Verified"
+) {
+    if (
+        !req.body.razorpay_order_id ||
+        !req.body.razorpay_payment_id
+    ) {
+        return res.status(400).json({
+            message: "Razorpay payment details are required"
+        });
+    }
+
+    const razorpayOrder =
+        await razorpay.orders.fetch(
+            req.body.razorpay_order_id
+        );
+
+    const razorpayPayment =
+        await razorpay.payments.fetch(
+            req.body.razorpay_payment_id
+        );
+
+    const expectedAmount =
+        Math.round(serverGrandTotal * 100);
+
+    if (
+        razorpayOrder.id !==
+            req.body.razorpay_order_id
+    ) {
+        return res.status(400).json({
+            message: "Invalid Razorpay order"
+        });
+    }
+
+    if (
+        razorpayPayment.order_id !==
+            req.body.razorpay_order_id
+    ) {
+        return res.status(400).json({
+            message: "Payment does not belong to this order"
+        });
+    }
+
+    if (
+        Number(razorpayOrder.amount) !==
+            expectedAmount
+    ) {
+        return res.status(400).json({
+            message: "Payment amount does not match order total"
+        });
+    }
+
+    if (razorpayPayment.status !== "captured") {
+        return res.status(400).json({
+            message: "Payment has not been captured"
+        });
+    }
+}
+
         // Add store_id to every product saved inside the order
         const orderProducts = req.body.products.map(product => {
 
