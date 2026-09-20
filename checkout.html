@@ -125,12 +125,75 @@ console.log("GRAND TOTAL:", grandTotal);
         name: "HyperLocal Delivery",
         description: "Order Payment",
 
-        handler: async function () {
+        handler: async function (response) {
 
-            alert("Payment Successful 🎉");
-
-            // Next we'll save the order here.
+    const verifyResponse = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/verify-payment",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + localStorage.getItem("token")
+            },
+            body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+            })
         }
+    );
+
+    const verifyData = await verifyResponse.json();
+
+    if (!verifyResponse.ok) {
+        alert("Payment verification failed ❌");
+        console.error("Verification error:", verifyData);
+        return;
+    }
+
+    alert("Payment verified successfully 🎉");
+
+const orderResponse = await fetch(
+    "https://hyperlocal-backend-84rs.onrender.com/orders",
+    {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        },
+        body: JSON.stringify({
+            customerName,
+            phone,
+            address,
+            email: user.email,
+            products,
+            subtotal: total,
+            delivery,
+            gst,
+            discount,
+            grandTotal,
+            payment,
+            status: "Paid"
+        })
+    }
+);
+
+const orderData = await orderResponse.json();
+
+if (!orderResponse.ok) {
+    alert("Payment succeeded, but order creation failed ❌");
+    console.error("Order creation error:", orderData);
+    return;
+}
+
+alert("Order placed successfully 🎉");
+
+localStorage.removeItem("cart");
+localStorage.removeItem("buyNowProduct");
+localStorage.removeItem("discount");
+
+window.location.href = "orders.html";
+}
     };
 
     const rzp = new Razorpay(options);
