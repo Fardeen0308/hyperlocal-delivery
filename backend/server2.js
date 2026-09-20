@@ -653,6 +653,53 @@ app.post(
                 message: productError.message
             });
         }
+for (const product of req.body.products) {
+
+    const dbProduct = dbProducts.find(
+        p => String(p.id) === String(product.id)
+    );
+
+    if (!dbProduct) {
+        return res.status(400).json({
+            message: `Product not found: ${product.id}`
+        });
+    }
+
+    const quantity = Number(product.quantity || 1);
+
+    if (quantity <= 0) {
+        return res.status(400).json({
+            message: `Invalid quantity for ${dbProduct.name}`
+        });
+    }
+
+    if (Number(dbProduct.stock) < quantity) {
+        return res.status(400).json({
+            message: `${dbProduct.name} is out of stock or has insufficient stock`
+        });
+    }
+}
+let serverSubtotal = 0;
+
+for (const product of req.body.products) {
+
+    const dbProduct = dbProducts.find(
+        p => String(p.id) === String(product.id)
+    );
+
+    const quantity = Number(product.quantity || 1);
+
+    serverSubtotal +=
+        Number(dbProduct.price) * quantity;
+}
+const serverDelivery = 40;
+const serverGst = serverSubtotal * 0.05;
+const serverDiscount = 0;
+const serverGrandTotal =
+    serverSubtotal +
+    serverDelivery +
+    serverGst -
+    serverDiscount;
 
         // Add store_id to every product saved inside the order
         const orderProducts = req.body.products.map(product => {
