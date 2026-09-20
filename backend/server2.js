@@ -222,11 +222,13 @@ app.post(
 
     } catch (error) {
 
-        res.status(500).json({
-            message: error.message
-        });
+    console.error("RAZORPAY CREATE ORDER ERROR:", error);
 
-    }
+    res.status(500).json({
+        message: error.message || "Razorpay order creation failed"
+    });
+
+}
 
 });
 
