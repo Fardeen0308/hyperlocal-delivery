@@ -203,6 +203,9 @@ const response = await fetch(
     document.getElementById("sales").innerText =
     "₹" + totalSales;
 
+    document.getElementById("earnings").innerText =
+"₹" + totalSales;
+
    // Users
 const currentUser =
     JSON.parse(localStorage.getItem("user"));
