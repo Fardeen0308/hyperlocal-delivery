@@ -265,6 +265,7 @@ app.post(
                 !razorpay_signature
             ) {
                 return res.status(400).json({
+                    success: false,
                     message: "Payment verification details are missing"
                 });
             }
@@ -281,19 +282,28 @@ app.post(
 
             if (generatedSignature !== razorpay_signature) {
                 return res.status(400).json({
+                    success: false,
                     message: "Payment verification failed"
                 });
             }
 
+            console.log(
+                "RAZORPAY PAYMENT VERIFIED:",
+                razorpay_payment_id
+            );
+
             res.json({
                 success: true,
-                message: "Payment verified successfully"
+                message: "Payment verified successfully",
+                razorpay_order_id,
+                razorpay_payment_id
             });
 
         } catch (error) {
             console.error("PAYMENT VERIFICATION ERROR:", error);
 
             res.status(500).json({
+                success: false,
                 message: "Payment verification failed"
             });
         }
@@ -635,6 +645,20 @@ app.post(
 
         const deliveryOtp =
             Math.floor(1000 + Math.random() * 9000).toString();
+
+            if (
+    req.body.payment !== "Cash on Delivery" &&
+    req.body.status === "Payment Verified"
+) {
+    if (
+        !req.body.razorpay_order_id ||
+        !req.body.razorpay_payment_id
+    ) {
+        return res.status(400).json({
+            message: "Verified payment details are required"
+        });
+    }
+}
 
         // Get product IDs from the cart
         const productIds = req.body.products.map(product =>
