@@ -209,28 +209,109 @@ app.post(
     requireRole("customer"),
     async (req, res) => {
 
-    try {
+   try {
 
-        const options = {
-            amount: req.body.amount * 100, // Amount in paise
-            currency: "INR",
-            receipt: "receipt_" + Date.now()
-        };
+    const products = req.body.products;
 
-        const order = await razorpay.orders.create(options);
+    if (!Array.isArray(products) || products.length === 0) {
+        return res.status(400).json({
+            message: "No products provided"
+        });
+    }
 
-        res.json(order);
+    const productIds = products.map(product => product.id);
 
-    } catch (error) {
+    const { data: dbProducts, error: productError } =
+        await supabase
+            .from("products")
+            .select("id, name, price, stock")
+            .in("id", productIds);
 
-    console.error("RAZORPAY CREATE ORDER ERROR:", error);
+    if (productError) {
+        return res.status(500).json({
+            message: productError.message
+        });
+    }
 
-    res.status(500).json({
-        message: error.message || "Razorpay order creation failed"
+    if (!dbProducts || dbProducts.length !== productIds.length) {
+        return res.status(400).json({
+            message: "One or more products were not found"
+        });
+    }
+
+    let subtotal = 0;
+
+    for (const product of products) {
+
+        const dbProduct = dbProducts.find(
+            p => String(p.id) === String(product.id)
+        );
+
+        if (!dbProduct) {
+            return res.status(400).json({
+                message: "Product not found"
+            });
+        }
+
+        const quantity = Number(product.quantity || 1);
+
+        if (quantity <= 0) {
+            return res.status(400).json({
+                message: `Invalid quantity for ${dbProduct.name}`
+            });
+        }
+
+        if (Number(dbProduct.stock) < quantity) {
+            return res.status(400).json({
+                message: `${dbProduct.name} is out of stock`
+            });
+        }
+
+        subtotal += Number(dbProduct.price) * quantity;
+    }
+
+    const delivery = 40;
+    const gst = subtotal * 0.05;
+    const discount = 0;
+
+    const grandTotal =
+        subtotal +
+        delivery +
+        gst -
+        discount;
+
+    const options = {
+        amount: Math.round(grandTotal * 100),
+        currency: "INR",
+        receipt: "receipt_" + Date.now()
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    console.log("RAZORPAY ORDER CREATED:", {
+        razorpayOrderId: order.id,
+        amount: order.amount,
+        subtotal,
+        delivery,
+        gst,
+        grandTotal
     });
 
-}
+    res.json(order);
 
+} catch (error) {
+
+    console.error(
+        "RAZORPAY CREATE ORDER ERROR:",
+        error
+    );
+
+    res.status(500).json({
+        message:
+            error.message ||
+            "Razorpay order creation failed"
+    });
+}
 });
 
 app.get("/bestsellers", async (req, res) => {
