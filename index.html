@@ -259,100 +259,130 @@ async function loadProducts() {
 
 function filterCategory(category) {
 
-    let container =
-    document.getElementById("products");
+    const container =
+        document.getElementById("products");
 
     container.innerHTML = "";
 
-    let products =
-    category === "All"
-        ? allProducts
-        : allProducts.filter(product =>
-            product.category === category);
+    const products =
+        category === "All"
+            ? allProducts
+            : allProducts.filter(product =>
+                product.category === category
+            );
 
     products.forEach(product => {
 
         container.innerHTML += `
         <div class="card"
-onclick="openProduct(
-'${product.id}',
-'${product.name}',
-'${product.price}',
-'${product.image}',
-'${product.category}'
-)">
+            onclick="openProduct(
+                '${product.id}',
+                '${product.name}',
+                '${product.price}',
+                '${product.image}',
+                '${product.category}'
+            )">
 
-            <img src="${product.image}"
-                 width="200"
-                 height="200">
+            <div class="offer">
+                ${product.sold >= 10 ? "🔥 Best Seller" : "20% OFF"}
+            </div>
 
-           <h2>${product.name}</h2>
+            <img src="${product.image}" alt="${product.name}">
 
-<p class="store-name">
-    🏪 ${product.store_name || "Local Store"}
-</p>
+            <div class="card-body">
 
-<p>${product.category}</p>
+                <h2>${product.name}</h2>
 
-<p class="price">₹${product.price}</p>
+                <p class="store-name">
+                    🏪 ${product.store_name || "Local Store"}
+                </p>
 
-<p class="stock">
-${product.stock > 0 ? "🟢 In Stock" : "🔴 Out of Stock"}
-</p>
+                <p class="category-name">
+                    ${product.category}
+                </p>
 
-<div class="button-group">
+                <div class="rating">
+                    ⭐ ${
+                        product.reviews && product.reviews.length
+                        ?
+                        (
+                            product.reviews.reduce(
+                                (sum, r) =>
+                                sum + Number(r.rating), 0
+                            ) / product.reviews.length
+                        ).toFixed(1)
+                        :
+                        "0.0"
+                    }
+                    (${product.reviews ? product.reviews.length : 0})
+                </div>
 
-${product.stock > 0
-? `
-<button onclick="event.stopPropagation(); addToCart(
-'${product.id}',
-'${product.name}',
-'${product.price}',
-'${product.image}',
-'${product.stock}'
-)">
-🛒 Add To Cart
-</button>
-`
-: `
-<button disabled>
-❌ Out of Stock
-</button>
-`
-}
+                <div class="price-row">
 
-${product.stock > 0
-? `
-<button onclick="event.stopPropagation(); buyNow(
-'${product.id}',
-'${product.name}',
-'${product.price}',
-'${product.image}'
-)">
-⚡ Buy Now
-</button>
-`
-: ""
-}
+                    <span class="price">
+                        ₹${product.price}
+                    </span>
 
-<button onclick="event.stopPropagation(); addToWishlist(
-'${product.name}',
-'${product.price}',
-'${product.image}'
-)">
-❤️ Wishlist
-</button>
+                    <span class="stock">
+                        ${
+                            product.stock > 0
+                            ? "🟢 In Stock"
+                            : "🔴 Out of Stock"
+                        }
+                    </span>
 
-</div>
-   
+                </div>
 
+                <div class="button-group">
+
+                    ${
+                        product.stock > 0
+                        ?
+                        `
+                        <button onclick="event.stopPropagation(); addToCart(
+                            '${product.id}',
+                            '${product.name}',
+                            '${product.price}',
+                            '${product.image}',
+                            '${product.stock}'
+                        )">
+                            🛒 Add
+                        </button>
+
+                        <button onclick="event.stopPropagation(); buyNow(
+                            '${product.id}',
+                            '${product.name}',
+                            '${product.price}',
+                            '${product.image}'
+                        )">
+                            ⚡ Buy
+                        </button>
+                        `
+                        :
+                        `
+                        <button disabled>
+                            ❌ Out of Stock
+                        </button>
+                        `
+                    }
+
+                    <button onclick="event.stopPropagation(); addToWishlist(
+                        '${product.name}',
+                        '${product.price}',
+                        '${product.image}'
+                    )">
+                        ❤️
+                    </button>
+
+                </div>
+
+            </div>
 
         </div>
         `;
+
     });
-
 }
-
 
 
 
