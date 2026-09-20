@@ -95,7 +95,11 @@ document.querySelector(
 ).value;
 
     if (payment !== "Cash on Delivery") {
-
+console.log("TOTAL:", total);
+console.log("DELIVERY:", delivery);
+console.log("GST:", gst);
+console.log("DISCOUNT:", discount);
+console.log("GRAND TOTAL:", grandTotal);
     const response = await fetch(
     "https://hyperlocal-backend-84rs.onrender.com/create-order",
     {
