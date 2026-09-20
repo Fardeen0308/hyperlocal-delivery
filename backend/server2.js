@@ -1,4 +1,5 @@
 require("dotenv").config();
+const crypto = require("crypto");
 const sendNotification = require("./notificationService");
 const bcrypt = require("bcrypt");
 const razorpay = require("./razorpay");
@@ -245,6 +246,59 @@ app.get("/bestsellers", async (req, res) => {
 
     res.json(data);
 });
+
+app.post(
+    "/verify-payment",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
+        try {
+            const {
+                razorpay_order_id,
+                razorpay_payment_id,
+                razorpay_signature
+            } = req.body;
+
+            if (
+                !razorpay_order_id ||
+                !razorpay_payment_id ||
+                !razorpay_signature
+            ) {
+                return res.status(400).json({
+                    message: "Payment verification details are missing"
+                });
+            }
+
+            const generatedSignature = crypto
+                .createHmac(
+                    "sha256",
+                    process.env.RAZORPAY_KEY_SECRET
+                )
+                .update(
+                    razorpay_order_id + "|" + razorpay_payment_id
+                )
+                .digest("hex");
+
+            if (generatedSignature !== razorpay_signature) {
+                return res.status(400).json({
+                    message: "Payment verification failed"
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Payment verified successfully"
+            });
+
+        } catch (error) {
+            console.error("PAYMENT VERIFICATION ERROR:", error);
+
+            res.status(500).json({
+                message: "Payment verification failed"
+            });
+        }
+    }
+);
 
 app.post("/products/:id/review", async (req, res) => {
 
