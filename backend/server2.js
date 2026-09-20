@@ -645,7 +645,7 @@ app.post(
         const { data: dbProducts, error: productError } =
             await supabase
                 .from("products")
-                .select("id, store_id")
+                .select("id, store_id, name, price, stock, sold")
                 .in("id", productIds);
 
         if (productError) {
