@@ -734,8 +734,15 @@ gst: serverGst,
 discount: serverDiscount,
 grandTotal: serverGrandTotal,
                 payment: req.body.payment,
-                status: req.body.status,
-                deliveryOtp: deliveryOtp
+status: req.body.status,
+
+razorpay_order_id:
+    req.body.razorpay_order_id || null,
+
+razorpay_payment_id:
+    req.body.razorpay_payment_id || null,
+
+deliveryOtp: deliveryOtp
             }])
             .select();
 
