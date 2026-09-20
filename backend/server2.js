@@ -728,11 +728,11 @@ const serverGrandTotal =
                 // Save products with store_id
                 products: orderProducts,
 
-                subtotal: req.body.subtotal,
-                delivery: req.body.delivery,
-                gst: req.body.gst,
-                discount: req.body.discount,
-                grandTotal: req.body.grandTotal,
+                subtotal: serverSubtotal,
+delivery: serverDelivery,
+gst: serverGst,
+discount: serverDiscount,
+grandTotal: serverGrandTotal,
                 payment: req.body.payment,
                 status: req.body.status,
                 deliveryOtp: deliveryOtp
@@ -767,8 +767,8 @@ const serverGrandTotal =
                             Number(dbProduct.sold || 0) +
                             Number(product.quantity || 1)
                     })
-                    .eq("id", product.id);
-
+                    .eq("id", product.id)
+.gte("stock", Number(product.quantity || 1));
             }
 
         }
