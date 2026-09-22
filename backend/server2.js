@@ -1367,12 +1367,20 @@ app.put(
     authenticateToken,
     requireRole("delivery"),
     async (req, res) => {
-    const { email, status } = req.body;
+    const { status } = req.body;
 
-    const { error } = await supabase
-        .from("deliveryPartners")
-        .update({ status })
-        .eq("email", email);
+const allowedStatuses = ["Available", "Busy"];
+
+if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({
+        message: "Invalid delivery status"
+    });
+}
+
+const { error } = await supabase
+    .from("deliveryPartners")
+    .update({ status })
+    .eq("email", req.user.email);
 
     if(error){
         return res.status(500).json({
