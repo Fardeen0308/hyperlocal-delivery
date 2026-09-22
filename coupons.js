@@ -1,8 +1,19 @@
+const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user || user.role !== "admin") {
+    alert("Access Denied");
+    window.location.href = "login.html";
+}
+
 const API = "https://hyperlocal-backend-84rs.onrender.com";
 
 async function loadCoupons() {
 
-    const res = await fetch(`${API}/coupons`);
+   const res = await fetch(`${API}/coupons`, {
+    headers: {
+        "Authorization": "Bearer " + localStorage.getItem("token")
+    }
+});
     const coupons = await res.json();
 
     const table = document.getElementById("couponTable");
@@ -41,8 +52,9 @@ async function addCoupon() {
     const res = await fetch(`${API}/coupons`, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
-        },
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + localStorage.getItem("token")
+},
         body: JSON.stringify({
             code,
             discount,
@@ -69,9 +81,11 @@ async function deleteCoupon(id) {
     if (!confirm("Delete this coupon?")) return;
 
     const res = await fetch(`${API}/coupons/${id}`, {
-        method: "DELETE"
-    });
-
+    method: "DELETE",
+    headers: {
+        "Authorization": "Bearer " + localStorage.getItem("token")
+    }
+});
     const data = await res.json();
 
     alert(data.message);
