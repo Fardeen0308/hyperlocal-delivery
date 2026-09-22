@@ -14,9 +14,13 @@ if (user.role !== "delivery") {
 async function loadOrders() {
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/orders"
-    );
-
+    "https://hyperlocal-backend-84rs.onrender.com/orders",
+    {
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
+    }
+);
     const orders = await response.json();
 
     const container = document.getElementById("orders");
@@ -91,8 +95,12 @@ async function verifyOtp(id) {
         {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
-            },
+                 "Content-Type": 
+    "application/json",
+                "Authorization":
+     "Bearer " + 
+     localStorage.getItem("token")
+             },
             body: JSON.stringify({ otp })
         }
     );
@@ -125,8 +133,9 @@ function sendLocation() {
                 {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
-                    },
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + localStorage.getItem("token")
+},
                     body: JSON.stringify({
                         email: user.email,
                         lat: position.coords.latitude,
@@ -143,8 +152,13 @@ function sendLocation() {
 async function loadStats() {
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/delivery-earnings/" + user.email
-    );
+    "https://hyperlocal-backend-84rs.onrender.com/delivery-earnings/" + user.email,
+    {
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
+    }
+);
 
     const data = await response.json();
 
@@ -174,8 +188,9 @@ async function toggleStatus() {
         {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json"
-            },
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + localStorage.getItem("token")
+},
             body: JSON.stringify({
                 email: user.email,
                 status: currentStatus
