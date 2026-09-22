@@ -69,11 +69,14 @@ async function deleteProduct(id) {
     if (!confirm("Delete this product?")) return;
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/products/" + id,
-        {
-            method: "DELETE"
+    "https://hyperlocal-backend-84rs.onrender.com/products/" + id,
+    {
+        method: "DELETE",
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
         }
-    );
+    }
+);
 
     const data = await response.json();
 
