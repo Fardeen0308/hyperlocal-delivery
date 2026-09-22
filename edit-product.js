@@ -10,8 +10,13 @@ const productId = localStorage.getItem("editProductId");
 async function loadProduct() {
 
     const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/products"
-    );
+    "https://hyperlocal-backend-84rs.onrender.com/products",
+    {
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
+    }
+);
 
     const products = await response.json();
 
@@ -36,8 +41,10 @@ async function updateProduct() {
         {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json"
-            },
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + 
+    localStorage.getItem("token")
+},
             body: JSON.stringify({
                 name: document.getElementById("name").value,
                 price: document.getElementById("price").value,
