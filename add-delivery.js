@@ -16,9 +16,11 @@ async function addPartner() {
         "https://hyperlocal-backend-84rs.onrender.com/delivery-partners",
         {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+             headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + 
+    localStorage.getItem("token")
+},
             body: JSON.stringify({
                 name,
                 email,
