@@ -1445,22 +1445,78 @@ app.get(
     "/location/:email",
     authenticateToken,
     async (req, res) => {
-    const { data, error } = await supabase
-        .from("locations")
-        .select("*")
-        .eq("email", req.params.email)
-        .single();
+        try {
+            const requestedEmail = req.params.email;
+            const userEmail = req.user.email;
+            const userRole = req.user.role;
 
-    if (error) {
-        return res.status(404).json({
-            message: "Location not found"
-        });
+            // Admin can view delivery locations
+            if (userRole === "admin") {
+                // Continue to the location lookup below
+            } else if (userRole === "delivery") {
+                // Delivery partners can view only their own location
+                if (requestedEmail !== userEmail) {
+                    return res.status(403).json({
+                        message: "Access denied"
+                    });
+                }
+            } else if (userRole === "customer") {
+                // Customers can view a partner's location only
+                // if that partner is assigned to their order.
+                const { data: orders, error: ordersError } =
+                    await supabase
+                        .from("orders")
+                        .select("id")
+                        .eq("email", userEmail)
+                        .eq("deliveryPartnerEmail", requestedEmail)
+                        .eq("status", "Out for Delivery")
+                        .limit(1);
+
+                if (ordersError) {
+                    return res.status(500).json({
+                        message: ordersError.message
+                    });
+                }
+
+                if (!orders || orders.length === 0) {
+                    return res.status(403).json({
+                        message: "You cannot view this location"
+                    });
+                }
+            } else {
+                return res.status(403).json({
+                    message: "Access denied"
+                });
+            }
+
+            const { data, error } = await supabase
+                .from("locations")
+                .select("email, lat, lng")
+                .eq("email", requestedEmail)
+                .maybeSingle();
+
+            if (error) {
+                return res.status(500).json({
+                    message: error.message
+                });
+            }
+
+            if (!data) {
+                return res.status(404).json({
+                    message: "Location not found"
+                });
+            }
+
+            res.json(data);
+        } catch (error) {
+            console.error("Location lookup error:", error);
+
+            res.status(500).json({
+                message: "Server error"
+            });
+        }
     }
-
-    res.json(data);
-
-});
-
+);
 app.post(
     "/verify-otp/:id",
     authenticateToken,
