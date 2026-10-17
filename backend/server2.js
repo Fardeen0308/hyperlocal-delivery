@@ -1400,27 +1400,44 @@ app.post(
     requireRole("delivery"),
     async (req, res) => {
 
-    const { email, lat, lng } = req.body;
+    const { lat, lng } = req.body;
 
-    const { error } = await supabase
-        .from("locations")
-        .upsert({
-            email,
-            lat,
-            lng
-        }, {
-            onConflict: "email"
-        });
+const latitude = Number(lat);
+const longitude = Number(lng);
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
-    }
-
-    res.json({
-        message: "Location Updated"
+if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+) {
+    return res.status(400).json({
+        message: "Invalid location coordinates"
     });
+}
+
+const { error } = await supabase
+    .from("locations")
+    .upsert(
+        {
+            email: req.user.email,
+            lat: latitude,
+            lng: longitude
+        },
+        { onConflict: "email" }
+    );
+
+if (error) {
+    return res.status(500).json({
+        message: error.message
+    });
+}
+
+res.json({
+    message: "Location updated successfully"
+});
 
 });
 
