@@ -1483,6 +1483,13 @@ app.post(
             });
         }
 
+        if (order.deliveryPartnerEmail !== req.user.email) {
+    return res.status(403).json({
+        success: false,
+        message: "This order is not assigned to you."
+    });
+}
+
         // 2. Check OTP
         if (order.deliveryOtp !== req.body.otp) {
             return res.json({
