@@ -20,42 +20,77 @@ container.innerHTML = `
 </div>
 `;
 
-async function addReview(){
+async function addReview() {
+    try {
+        const product = JSON.parse(
+            localStorage.getItem("selectedProduct")
+        );
 
-    const product =
-    JSON.parse(localStorage.getItem("selectedProduct"));
+        const user = JSON.parse(
+            localStorage.getItem("user")
+        );
 
-    const user =
-    JSON.parse(localStorage.getItem("user"));
+        const token = localStorage.getItem("token");
 
-    const rating =
-    document.getElementById("rating").value;
-
-    const comment =
-    document.getElementById("comment").value;
-
-    const response = await fetch(
-        `https://hyperlocal-backend-84rs.onrender.com/products/${product.id}/review`,
-        {
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                user:user.name,
-                rating,
-                comment
-            })
+        if (!product || !product.id) {
+            alert("Product not found. Please reopen the product.");
+            return;
         }
-    );
 
-    const data = await response.json();
+        if (!user || !token) {
+            alert("Please log in as a customer to submit a review.");
+            return;
+        }
 
-    alert(data.message);
+        const rating = Number(
+            document.getElementById("rating").value
+        );
 
-    location.reload();
+        const comment = document
+            .getElementById("comment")
+            .value.trim();
 
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+            alert("Please select a rating from 1 to 5.");
+            return;
+        }
+
+        if (!comment || comment.length > 500) {
+            alert("Please enter a comment of up to 500 characters.");
+            return;
+        }
+
+        const response = await fetch(
+            `https://hyperlocal-backend-84rs.onrender.com/products/${product.id}/review`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({
+                    rating,
+                    comment
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Failed to submit review.");
+            return;
+        }
+
+        alert(data.message || "Review added successfully!");
+        location.reload();
+
+    } catch (error) {
+        console.error("Review submission error:", error);
+        alert("Unable to submit review. Please try again.");
+    }
 }
+   
 
 async function loadRelatedProducts(){
 
@@ -97,47 +132,6 @@ async function loadRelatedProducts(){
 }
 loadRelatedProducts();
 
-async function loadReviews(){
-
-    const product =
-    JSON.parse(localStorage.getItem("selectedProduct"));
-
-    const response = await fetch(
-        "https://hyperlocal-backend-84rs.onrender.com/products"
-    );
-
-    const products = await response.json();
-
-    const currentProduct =
-    products.find(p => p.id ===
-        product.id);
-    let html = "";
-
-    currentProduct.reviews.forEach(review => {
-
-        html += `
-        <div class="card">
-
-            <h3>${review.user}</h3>
-
-            <p>⭐ ${review.rating}</p>
-
-            <p>${review.comment}</p>
-
-            <small>
-            ${new Date(review.date).toLocaleDateString()}
-            </small>
-
-        </div>
-        `;
-
-    });
-
-    document.getElementById("reviews").innerHTML = html;
-
-}
-
-loadReviews();
 
 async function loadReviews(){
 
