@@ -31,9 +31,24 @@ cloudinary.config({
 });
 
 const upload = multer({
-    dest: "uploads/"
-});
+    dest: "uploads/",
+    limits: {
+        fileSize: 5 * 1024 * 1024 // Maximum 5 MB
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
 
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error("Only JPG, PNG, and WebP images are allowed"));
+        }
+    }
+});
 
 app.get("/", (req, res) => {
     res.send("HyperLocal Backend Running with Supabase 🚀");
@@ -42,166 +57,354 @@ app.get("/", (req, res) => {
 app.post(
     "/products",
     authenticateToken,
-    requireRole("admin"),
+    requireRole("admin", "store_owner"),
     async (req, res) => {
+        try {
+            const name = String(req.body.name || "").trim();
+            const image = String(req.body.image || "").trim();
+            const category = String(req.body.category || "").trim();
+            const price = Number(req.body.price);
+            const stock =
+                req.body.stock === undefined || req.body.stock === ""
+                    ? 10
+                    : Number(req.body.stock);
 
+            if (!name || name.length > 150) {
+                return res.status(400).json({
+                    message: "Product name is required (maximum 150 characters)"
+                });
+            }
+
+            if (!image || !image.startsWith("https://")) {
+                return res.status(400).json({
+                    message: "A valid HTTPS product image URL is required"
+                });
+            }
+
+            if (!category || category.length > 100) {
+                return res.status(400).json({
+                    message: "Product category is required (maximum 100 characters)"
+                });
+            }
+
+            if (!Number.isFinite(price) || price <= 0) {
+                return res.status(400).json({
+                    message: "Price must be greater than zero"
+                });
+            }
+
+            if (!Number.isInteger(stock) || stock < 0) {
+                return res.status(400).json({
+                    message: "Stock must be a non-negative whole number"
+                });
+            }
+
+            // Find the store belonging to the authenticated user
+            const { data: store, error: storeError } = await supabase
+                .from("stores")
+                .select("id")
+                .eq("owner_id", req.user.id)
+                .maybeSingle();
+
+            if (storeError) {
+                console.error("Store lookup failed:", storeError.message);
+                return res.status(500).json({
+                    message: "Unable to find your store"
+                });
+            }
+
+            if (!store) {
+                return res.status(404).json({
+                    message: "No store is assigned to this account"
+                });
+            }
+
+            const { data, error } = await supabase
+                .from("products")
+                .insert([{
+                    name,
+                    price,
+                    image,
+                    category,
+                    stock,
+                    sold: 0,
+                    store_id: store.id
+                }])
+                .select();
+
+            if (error) {
+                console.error("Product insert failed:", error.message);
+                return res.status(500).json({
+                    message: "Unable to add product"
+                });
+            }
+
+            return res.status(201).json({
+                message: "Product Added Successfully",
+                product: data
+            });
+
+        } catch (error) {
+            console.error("Add product error:", error.message);
+            return res.status(500).json({
+                message: "Server error while adding product"
+            });
+        }
+    }
+);
+
+app.get("/products", async (req, res) => {
     try {
+        const { data, error } = await supabase
+            .from("products")
+            .select(`
+                id,
+                name,
+                price,
+                image,
+                category,
+                stock,
+                sold,
+                reviews,
+                store_id,
+                stores (
+                    store_name
+                )
+            `);
 
-        // Find the store owned by the logged-in admin
-        const { data: store, error: storeError } = await supabase
-            .from("stores")
-            .select("id")
-            .eq("owner_id", req.user.id)
-            .single();
+        if (error) {
+            console.error("Products fetch failed:", error.message);
 
-        if (storeError || !store) {
-            return res.status(404).json({
-                message: "Store not found for this admin"
+            return res.status(500).json({
+                message: "Unable to load products"
             });
         }
 
-        // Add product to this store
-        const { data, error } = await supabase
-            .from("products")
-            .insert([
-                {
-                    name: req.body.name,
-                    price: req.body.price,
-                    image: req.body.image,
-                    category: req.body.category,
-                    stock: req.body.stock || 10,
-                    sold: 0,
-                    store_id: store.id
-                }
-            ])
-            .select();
+        const products = (data || []).map(product => ({
+            ...product,
+            store_name: product.stores?.store_name || "Local Store"
+        }));
 
-        console.log("Supabase Data:", data);
-        console.log("Supabase Error:", error);
-
-        if (error) {
-            throw error;
-        }
-
-        res.json({
-            message: "Product Added Successfully",
-            product: data
-        });
+        return res.json(products);
 
     } catch (error) {
+        console.error("Products route error:", error.message);
 
-        console.error("Add product error:", error);
-
-        res.status(500).json({
-            success: false,
-            error: error.message
+        return res.status(500).json({
+            message: "Server error while loading products"
         });
-
     }
-});
-
-app.get("/products", async (req, res) => {
-
-    const { data, error } = await supabase
-        .from("products")
-        .select(`
-            *,
-            stores (
-                store_name
-            )
-        `);
-
-    if (error) {
-
-        return res.status(500).json(error);
-
-    }
-
-    const products = data.map(product => ({
-        ...product,
-        store_name: product.stores
-            ? product.stores.store_name
-            : "Local Store"
-    }));
-
-    res.json(products);
-
 });
 
 app.delete(
     "/products/:id",
     authenticateToken,
-    requireRole("admin"),
+    requireRole("admin", "store_owner"),
     async (req, res) => {
+        try {
+            // Find the store belonging to the logged-in account
+            const { data: store, error: storeError } = await supabase
+                .from("stores")
+                .select("id")
+                .eq("owner_id", req.user.id)
+                .maybeSingle();
 
-    const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", req.params.id);
+            if (storeError) {
+                console.error("Store lookup failed:", storeError.message);
+                return res.status(500).json({
+                    message: "Unable to verify store ownership"
+                });
+            }
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+            if (!store) {
+                return res.status(404).json({
+                    message: "No store is assigned to this account"
+                });
+            }
+
+            // Delete only a product belonging to this store
+            const { data, error } = await supabase
+                .from("products")
+                .delete()
+                .eq("id", req.params.id)
+                .eq("store_id", store.id)
+                .select("id");
+
+            if (error) {
+                console.error("Product deletion failed:", error.message);
+                return res.status(500).json({
+                    message: "Unable to delete product"
+                });
+            }
+
+            if (!data || data.length === 0) {
+                return res.status(404).json({
+                    message: "Product not found in your store"
+                });
+            }
+
+            return res.json({
+                message: "Product Deleted Successfully"
+            });
+
+        } catch (error) {
+            console.error("Product deletion error:", error.message);
+            return res.status(500).json({
+                message: "Server error while deleting product"
+            });
+        }
     }
-
-    res.json({
-        message: "Product Deleted Successfully"
-    });
-
-});
+);
 
 app.put(
     "/products/:id",
     authenticateToken,
-    requireRole("admin"),
+    requireRole("admin", "store_owner"),
     async (req, res) => {
+        try {
+            const name = String(req.body.name || "").trim();
+            const category = String(req.body.category || "").trim();
+            const price = Number(req.body.price);
+            const stock = Number(req.body.stock);
 
-    const { error } = await supabase
-        .from("products")
-        .update({
-            name: req.body.name,
-            price: req.body.price,
-            category: req.body.category,
-            stock: req.body.stock
-        })
-        .eq("id", req.params.id);
+            if (!name || name.length > 150) {
+                return res.status(400).json({
+                    message: "Product name is required (maximum 150 characters)"
+                });
+            }
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+            if (!category || category.length > 100) {
+                return res.status(400).json({
+                    message: "Product category is required (maximum 100 characters)"
+                });
+            }
+
+            if (!Number.isFinite(price) || price <= 0) {
+                return res.status(400).json({
+                    message: "Price must be greater than zero"
+                });
+            }
+
+            if (!Number.isInteger(stock) || stock < 0) {
+                return res.status(400).json({
+                    message: "Stock must be a non-negative whole number"
+                });
+            }
+
+            // Find the store belonging to the logged-in account
+            const { data: store, error: storeError } = await supabase
+                .from("stores")
+                .select("id")
+                .eq("owner_id", req.user.id)
+                .maybeSingle();
+
+            if (storeError) {
+                console.error("Store lookup failed:", storeError.message);
+                return res.status(500).json({
+                    message: "Unable to verify store ownership"
+                });
+            }
+
+            if (!store) {
+                return res.status(404).json({
+                    message: "No store is assigned to this account"
+                });
+            }
+
+            // Update only a product belonging to this store
+            const { data, error } = await supabase
+                .from("products")
+                .update({
+                    name,
+                    price,
+                    category,
+                    stock
+                })
+                .eq("id", req.params.id)
+                .eq("store_id", store.id)
+                .select("id");
+
+            if (error) {
+                console.error("Product update failed:", error.message);
+                return res.status(500).json({
+                    message: "Unable to update product"
+                });
+            }
+
+            if (!data || data.length === 0) {
+                return res.status(404).json({
+                    message: "Product not found in your store"
+                });
+            }
+
+            return res.json({
+                message: "Product Updated Successfully"
+            });
+
+        } catch (error) {
+            console.error("Product update error:", error.message);
+            return res.status(500).json({
+                message: "Server error while updating product"
+            });
+        }
     }
+);
 
-    res.json({
-        message: "Product Updated Successfully"
-    });
+app.post(
+    "/upload",
+    authenticateToken,
+    requireRole("admin", "store_owner"),
+    upload.single("image"),
+    async (req, res) => {
+        let uploadedFilePath = req.file?.path;
 
-});
+        try {
+            if (!req.file) {
+                return res.status(400).json({
+                    message: "Please select an image to upload"
+                });
+            }
 
-app.post("/upload", upload.single("image"), async (req, res) => {
+            // Allow only image files
+            if (!req.file.mimetype.startsWith("image/")) {
+                return res.status(400).json({
+                    message: "Only image files are allowed"
+                });
+            }
 
-    try {
+            const result = await cloudinary.uploader.upload(
+                req.file.path,
+                {
+                    resource_type: "image"
+                }
+            );
 
-        const result = await cloudinary.uploader.upload(req.file.path);
+            return res.json({
+                message: "Image Uploaded",
+                imageUrl: result.secure_url
+            });
 
-        fs.unlinkSync(req.file.path);
+        } catch (error) {
+            console.error("Image upload error:", error);
 
-        res.json({
-            message: "Image Uploaded",
-            imageUrl: result.secure_url
-        });
+            return res.status(500).json({
+                message: "Upload Failed"
+            });
 
-    } catch (error) {
-
-        res.status(500).json({
-            message: "Upload Failed",
-            error: error.message
-        });
-
+        } finally {
+            if (uploadedFilePath && fs.existsSync(uploadedFilePath)) {
+                try {
+                    fs.unlinkSync(uploadedFilePath);
+                } catch (cleanupError) {
+                    console.error(
+                        "Temporary file cleanup failed:",
+                        cleanupError.message
+                    );
+                }
+            }
+        }
     }
-
-});
+);
 
 app.post(
     "/create-order",
@@ -391,43 +594,81 @@ app.post(
     }
 );
 
-app.post("/products/:id/review", async (req, res) => {
+app.post(
+    "/products/:id/review",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
+        try {
+            const rating = Number(req.body.rating);
+            const comment = String(req.body.comment || "").trim();
 
-    const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", req.params.id)
-        .single();
+            if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+                return res.status(400).json({
+                    message: "Rating must be a whole number from 1 to 5"
+                });
+            }
 
-    if (error || !data) {
-        return res.status(404).json({
-            message: "Product not found"
-        });
+            if (!comment || comment.length > 500) {
+                return res.status(400).json({
+                    message: "Comment is required and must be 500 characters or fewer"
+                });
+            }
+
+            const { data: product, error } = await supabase
+                .from("products")
+                .select("id, reviews")
+                .eq("id", req.params.id)
+                .maybeSingle();
+
+            if (error) {
+                console.error("Review product lookup failed:", error.message);
+                return res.status(500).json({
+                    message: "Unable to find product"
+                });
+            }
+
+            if (!product) {
+                return res.status(404).json({
+                    message: "Product not found"
+                });
+            }
+
+            const reviews = Array.isArray(product.reviews)
+                ? product.reviews
+                : [];
+
+            reviews.push({
+                user: req.user.name || req.user.email,
+                rating,
+                comment,
+                date: new Date().toISOString()
+            });
+
+            const { error: updateError } = await supabase
+                .from("products")
+                .update({ reviews })
+                .eq("id", req.params.id);
+
+            if (updateError) {
+                console.error("Review save failed:", updateError.message);
+                return res.status(500).json({
+                    message: "Unable to save review"
+                });
+            }
+
+            return res.json({
+                message: "Review Added Successfully"
+            });
+
+        } catch (error) {
+            console.error("Review route error:", error.message);
+            return res.status(500).json({
+                message: "Server error while adding review"
+            });
+        }
     }
-
-    let reviews = data.reviews || [];
-
-    reviews.push({
-        user: req.body.user,
-        rating: Number(req.body.rating),
-        comment: req.body.comment,
-        date: new Date()
-    });
-
-    const { error: updateError } = await supabase
-        .from("products")
-        .update({ reviews })
-        .eq("id", req.params.id);
-
-    if (updateError) {
-        return res.status(500).json(updateError);
-    }
-
-    res.json({
-        message: "Review Added Successfully"
-    });
-
-});
+);
 
 app.get("/related/:category", async (req, res) => {
 
@@ -986,107 +1227,180 @@ app.get(
     authenticateToken,
     requireRole("customer"),
     async (req, res) => {
+        try {
+            // Customers may access only their own orders
+            if (
+                !req.user.email ||
+                req.params.email.toLowerCase() !==
+                    req.user.email.toLowerCase()
+            ) {
+                return res.status(403).json({
+                    message: "Access denied"
+                });
+            }
 
-        if (req.params.email !== req.user.email) {
-    return res.status(403).json({
-        message: "Access denied"
-    });
-}
-    const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("email", req.params.email);
+            const { data, error } = await supabase
+                .from("orders")
+                .select("*")
+                .eq("email", req.user.email)
+                .order("id", { ascending: false });
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+            if (error) {
+                console.error("Customer orders lookup failed:", error.message);
+
+                return res.status(500).json({
+                    message: "Unable to load your orders"
+                });
+            }
+
+            return res.json(data || []);
+
+        } catch (error) {
+            console.error("My orders route error:", error.message);
+
+            return res.status(500).json({
+                message: "Server error while loading your orders"
+            });
+        }
     }
-
-    res.json(data);
-
-});
+);
 
 app.delete(
     "/orders/:id",
     authenticateToken,
     requireRole("admin"),
     async (req, res) => {
+        try {
+            const { data: order, error: fetchError } = await supabase
+                .from("orders")
+                .select("id, status")
+                .eq("id", req.params.id)
+                .maybeSingle();
 
-    const { error } = await supabase
-        .from("orders")
-        .delete()
-        .eq("id", req.params.id);
+            if (fetchError) {
+                console.error("Order lookup failed:", fetchError.message);
+                return res.status(500).json({
+                    message: "Unable to retrieve order"
+                });
+            }
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+            if (!order) {
+                return res.status(404).json({
+                    message: "Order not found"
+                });
+            }
+
+            if (["Delivered", "Cancelled"].includes(order.status)) {
+                return res.status(400).json({
+                    message: `Cannot cancel an order with status: ${order.status}`
+                });
+            }
+
+            const { data, error } = await supabase
+                .from("orders")
+                .update({ status: "Cancelled" })
+                .eq("id", req.params.id)
+                .select("id");
+
+            if (error) {
+                console.error("Order cancellation failed:", error.message);
+                return res.status(500).json({
+                    message: "Unable to cancel order"
+                });
+            }
+
+            if (!data || data.length === 0) {
+                return res.status(409).json({
+                    message: "Order status changed. Please refresh."
+                });
+            }
+
+            return res.json({
+                message: "Order Cancelled Successfully"
+            });
+
+        } catch (error) {
+            console.error("Order cancellation error:", error.message);
+            return res.status(500).json({
+                message: "Server error while cancelling order"
+            });
+        }
     }
-
-    res.json({
-        message: "Order Cancelled Successfully"
-    });
-
-});
+);
 
 app.post(
     "/orders/:id/cancel",
     authenticateToken,
     requireRole("customer"),
     async (req, res) => {
-
         try {
+            const userEmail = req.user.email;
+
+            if (!userEmail) {
+                return res.status(403).json({
+                    message: "Customer identity could not be verified"
+                });
+            }
 
             const { data: order, error: fetchError } = await supabase
                 .from("orders")
-                .select("*")
+                .select("id, email, status")
                 .eq("id", req.params.id)
-                .single();
+                .eq("email", userEmail)
+                .maybeSingle();
 
-            if (fetchError || !order) {
+            if (fetchError) {
+                console.error("Order lookup failed:", fetchError.message);
+                return res.status(500).json({
+                    message: "Unable to retrieve order"
+                });
+            }
+
+            if (!order) {
                 return res.status(404).json({
                     message: "Order not found"
                 });
             }
 
-            if (order.email !== req.user.email) {
-                return res.status(403).json({
-                    message: "Access denied"
-                });
-            }
+            const cancellableStatuses = ["Pending", "Confirmed"];
 
-            if (order.status === "Delivered") {
+            if (!cancellableStatuses.includes(order.status)) {
                 return res.status(400).json({
-                    message: "Delivered orders cannot be cancelled"
+                    message: "This order can no longer be cancelled"
                 });
             }
 
-            const { error } = await supabase
+            const { data: updatedOrder, error: updateError } = await supabase
                 .from("orders")
-                .update({
-                    status: "Cancelled"
-                })
-                .eq("id", req.params.id);
+                .update({ status: "Cancelled" })
+                .eq("id", order.id)
+                .eq("email", userEmail)
+                .in("status", cancellableStatuses)
+                .select("id");
 
-            if (error) {
+            if (updateError) {
+                console.error("Order cancellation failed:", updateError.message);
                 return res.status(500).json({
-                    message: error.message
+                    message: "Unable to cancel order"
                 });
             }
 
-            res.json({
+            if (!updatedOrder || updatedOrder.length === 0) {
+                return res.status(409).json({
+                    message: "Order status changed. Please refresh and try again."
+                });
+            }
+
+            return res.json({
                 message: "Order Cancelled Successfully"
             });
 
         } catch (error) {
+            console.error("Customer cancellation error:", error.message);
 
-            console.error("Cancel order error:", error);
-
-            res.status(500).json({
-                message: "Server error"
+            return res.status(500).json({
+                message: "Server error while cancelling order"
             });
-
         }
     }
 );
@@ -1117,149 +1431,286 @@ app.put(
     authenticateToken,
     requireRole("admin"),
     async (req, res) => {
+        try {
+            const allowedStatuses = [
+                "Pending",
+                "Confirmed",
+                "Preparing",
+                "Ready",
+                "Out for Delivery",
+                "Delivered",
+                "Cancelled"
+            ];
 
-    // First, get the order
-    const { data: order, error: fetchError } = await supabase
-        .from("orders")
-        .select("deliveryPartnerEmail")
-        .eq("id", req.params.id)
-        .single();
+            const newStatus = req.body.status;
 
-    if (fetchError) {
-        return res.status(500).json({
-            message: fetchError.message
-        });
+            if (!allowedStatuses.includes(newStatus)) {
+                return res.status(400).json({
+                    message: "Invalid order status"
+                });
+            }
+
+            // Fetch the current order before updating
+            const { data: order, error: fetchError } = await supabase
+                .from("orders")
+                .select("id, status, deliveryPartnerEmail, earning")
+                .eq("id", req.params.id)
+                .maybeSingle();
+
+            if (fetchError) {
+                console.error("Order lookup failed:", fetchError.message);
+                return res.status(500).json({
+                    message: "Unable to retrieve order"
+                });
+            }
+
+            if (!order) {
+                return res.status(404).json({
+                    message: "Order not found"
+                });
+            }
+
+            // Avoid repeating delivery-stat updates for an already delivered order
+            if (order.status === "Delivered" && newStatus === "Delivered") {
+                return res.json({
+                    message: "Order is already delivered"
+                });
+            }
+
+            const { error: updateError } = await supabase
+                .from("orders")
+                .update({ status: newStatus })
+                .eq("id", req.params.id);
+
+            if (updateError) {
+                console.error("Order update failed:", updateError.message);
+                return res.status(500).json({
+                    message: "Unable to update order"
+                });
+            }
+
+            // Restore delivery partner availability and update statistics
+            if (
+                newStatus === "Delivered" &&
+                order.status !== "Delivered" &&
+                order.deliveryPartnerEmail
+            ) {
+                const { data: partner, error: partnerError } = await supabase
+                    .from("deliveryPartners")
+                    .select("totalDeliveries, totalEarnings")
+                    .eq("email", order.deliveryPartnerEmail)
+                    .maybeSingle();
+
+                if (partnerError) {
+                    console.error(
+                        "Delivery partner lookup failed:",
+                        partnerError.message
+                    );
+
+                    return res.status(500).json({
+                        message: "Order delivered, but partner statistics need attention"
+                    });
+                }
+
+                if (partner) {
+                    const { error: partnerUpdateError } = await supabase
+                        .from("deliveryPartners")
+                        .update({
+                            status: "Available",
+                            totalDeliveries:
+                                Number(partner.totalDeliveries || 0) + 1,
+                            totalEarnings:
+                                Number(partner.totalEarnings || 0) +
+                                Number(order.earning || 0)
+                        })
+                        .eq("email", order.deliveryPartnerEmail);
+
+                    if (partnerUpdateError) {
+                        console.error(
+                            "Partner statistics update failed:",
+                            partnerUpdateError.message
+                        );
+
+                        return res.status(500).json({
+                            message: "Order updated, but partner statistics need attention"
+                        });
+                    }
+                }
+            }
+
+            return res.json({
+                message: "Order Updated Successfully"
+            });
+
+        } catch (error) {
+            console.error("Order update error:", error.message);
+
+            return res.status(500).json({
+                message: "Server error while updating order"
+            });
+        }
     }
-
-    // Update the order status
-    const { error } = await supabase
-        .from("orders")
-        .update({
-            status: req.body.status
-        })
-        .eq("id", req.params.id);
-
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
-    }
-
-    // If delivered, make the partner available again
-    if (req.body.status === "Delivered" && order.deliveryPartnerEmail) {
-
-    // Get the order details
-    const { data: deliveredOrder } = await supabase
-        .from("orders")
-        .select("earning")
-        .eq("id", req.params.id)
-        .single();
-
-    // Get current delivery partner stats
-    const { data: partner } = await supabase
-        .from("deliveryPartners")
-        .select("totalDeliveries,totalEarnings")
-        .eq("email", order.deliveryPartnerEmail)
-        .single();
-
-    await supabase
-        .from("deliveryPartners")
-        .update({
-            status: "Available",
-            totalDeliveries: (partner.totalDeliveries || 0) + 1,
-            totalEarnings:
-                (partner.totalEarnings || 0) +
-                (deliveredOrder.earning || 0)
-        })
-        .eq("email", order.deliveryPartnerEmail);
-
-}
-    res.json({
-        message: "Order Updated Successfully"
-    });
-
-});
+);
 app.post(
     "/delivery-partners",
     authenticateToken,
     requireRole("admin"),
     async (req, res) => {
-    try {
+        try {
+            const name =
+                typeof req.body.name === "string"
+                    ? req.body.name.trim()
+                    : "";
 
-        const {
-            name,
-            email,
-            phone,
-            password
-        } = req.body;
+            const email =
+                typeof req.body.email === "string"
+                    ? req.body.email.trim().toLowerCase()
+                    : "";
 
-        if (!name || !email || !phone || !password) {
-            return res.status(400).json({
-                message: "Please fill all required fields"
+            const phone =
+                typeof req.body.phone === "string"
+                    ? req.body.phone.trim()
+                    : "";
+
+            const password = req.body.password;
+
+            if (!name || !email || !phone || !password) {
+                return res.status(400).json({
+                    message: "Please fill all required fields"
+                });
+            }
+
+            if (
+                name.length > 100 ||
+                email.length > 254 ||
+                phone.length > 20
+            ) {
+                return res.status(400).json({
+                    message: "One or more fields exceed the allowed length"
+                });
+            }
+
+            if (
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+            ) {
+                return res.status(400).json({
+                    message: "Please enter a valid email address"
+                });
+            }
+
+            if (
+                typeof password !== "string" ||
+                password.length < 8 ||
+                password.length > 72
+            ) {
+                return res.status(400).json({
+                    message: "Password must be between 8 and 72 characters"
+                });
+            }
+
+            // Hash the password before storing it
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            const { data, error } = await supabase
+                .from("deliveryPartners")
+                .insert([{
+                    name,
+                    email,
+                    phone,
+                    password: hashedPassword,
+                    rating: 5,
+                    status: "Available",
+                    totalDeliveries: 0,
+                    totalEarnings: 0
+                }])
+                .select(
+                    "id, name, email, phone, rating, status, totalDeliveries, totalEarnings"
+                );
+
+            if (error) {
+                if (error.code === "23505") {
+                    return res.status(409).json({
+                        message: "A delivery partner with this email already exists"
+                    });
+                }
+
+                console.error(
+                    "Add delivery partner database error:",
+                    error.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to create delivery partner"
+                });
+            }
+
+            if (!data || data.length === 0) {
+                return res.status(500).json({
+                    message: "Delivery partner creation could not be confirmed"
+                });
+            }
+
+            return res.status(201).json({
+                message: "Delivery Partner Added Successfully",
+                partner: data[0]
             });
-        }
 
-        // Hash delivery partner password
-        const hashedPassword =
-            await bcrypt.hash(password, 10);
-
-        const { data, error } = await supabase
-            .from("deliveryPartners")
-            .insert([{
-                name: name,
-                email: email,
-                phone: phone,
-                password: hashedPassword,
-                rating: 5,
-                status: "Available",
-                totalDeliveries: 0,
-                totalEarnings: 0
-            }])
-            .select();
-
-        if (error) {
+        } catch (error) {
+            console.error(
+                "Add delivery partner error:",
+                error.message
+            );
 
             return res.status(500).json({
-                message: error.message
+                message: "Server error while creating delivery partner"
             });
-
         }
-
-        res.json({
-            message: "Delivery Partner Added Successfully",
-            partner: data[0]
-        });
-
-    } catch (error) {
-
-        console.error("Add delivery partner error:", error);
-
-        res.status(500).json({
-            message: error.message
-        });
-
     }
-
-});
+);
 app.get(
     "/delivery-partners",
     authenticateToken,
     requireRole("admin"),
     async (req, res) => {
+        try {
+            const { data, error } = await supabase
+                .from("deliveryPartners")
+                .select(`
+                    id,
+                    name,
+                    email,
+                    phone,
+                    rating,
+                    status,
+                    totalDeliveries,
+                    totalEarnings
+                `);
 
-    const { data, error } = await supabase
-        .from("deliveryPartners")
-        .select("*");
+            if (error) {
+                console.error(
+                    "Delivery partner lookup failed:",
+                    error.message
+                );
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+                return res.status(500).json({
+                    message: "Unable to load delivery partners"
+                });
+            }
+
+            return res.json(data || []);
+
+        } catch (error) {
+            console.error(
+                "Delivery partner route error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                message: "Server error while loading delivery partners"
+            });
+        }
     }
-
-    res.json(data);
-
-});
+);
 
 app.delete(
     "/delivery-partners/:id",
@@ -1291,108 +1742,246 @@ app.put(
     authenticateToken,
     requireRole("admin"),
     async (req, res) => {
+        try {
+            const partnerEmail = String(req.body.email || "")
+                .trim()
+                .toLowerCase();
 
-    try {
+            if (!partnerEmail) {
+                return res.status(400).json({
+                    message: "Delivery partner email is required"
+                });
+            }
 
-        // 1. Get delivery partner
-        const { data: partner, error: partnerError } = await supabase
-            .from("deliveryPartners")
-            .select("*")
-            .eq("email", req.body.email)
-            .single();
+            // Find the order
+            const { data: order, error: orderFetchError } = await supabase
+                .from("orders")
+                .select("id, status, deliveryPartnerId")
+                .eq("id", req.params.id)
+                .maybeSingle();
 
-        if (partnerError || !partner) {
-            return res.status(404).json({
-                message: "Delivery Partner not found"
+            if (orderFetchError) {
+                console.error("Order lookup failed:", orderFetchError.message);
+                return res.status(500).json({
+                    message: "Unable to retrieve order"
+                });
+            }
+
+            if (!order) {
+                return res.status(404).json({
+                    message: "Order not found"
+                });
+            }
+
+            if (["Delivered", "Cancelled"].includes(order.status)) {
+                return res.status(400).json({
+                    message: "This order cannot be assigned"
+                });
+            }
+
+            // Find an available delivery partner
+            const { data: partner, error: partnerError } = await supabase
+                .from("deliveryPartners")
+                .select("id, name, email, status, fcmToken")
+                .ilike("email", partnerEmail)
+                .maybeSingle();
+
+            if (partnerError) {
+                console.error("Partner lookup failed:", partnerError.message);
+                return res.status(500).json({
+                    message: "Unable to retrieve delivery partner"
+                });
+            }
+
+            if (!partner) {
+                return res.status(404).json({
+                    message: "Delivery partner not found"
+                });
+            }
+
+            if (partner.status !== "Available") {
+                return res.status(409).json({
+                    message: "Delivery partner is not available"
+                });
+            }
+
+            // Assign the order
+            const { data: updatedOrder, error: orderError } = await supabase
+                .from("orders")
+                .update({
+                    deliveryPartnerId: partner.id,
+                    deliveryPartnerName: partner.name,
+                    deliveryPartnerEmail: partner.email,
+                    status: "Out for Delivery"
+                })
+                .eq("id", req.params.id)
+                .select("id");
+
+            if (orderError) {
+                console.error("Order assignment failed:", orderError.message);
+                return res.status(500).json({
+                    message: "Unable to assign delivery partner"
+                });
+            }
+
+            if (!updatedOrder || updatedOrder.length === 0) {
+                return res.status(409).json({
+                    message: "Order assignment could not be confirmed"
+                });
+            }
+
+            const { error: busyError } = await supabase
+                .from("deliveryPartners")
+                .update({ status: "Busy" })
+                .eq("id", partner.id);
+
+            if (busyError) {
+                console.error("Partner status update failed:", busyError.message);
+
+                return res.status(500).json({
+                    message: "Order assigned, but partner status needs attention"
+                });
+            }
+
+            if (partner.fcmToken) {
+                try {
+                    await sendNotification(
+                        partner.fcmToken,
+                        "🛵 New Delivery",
+                        "A new order has been assigned to you."
+                    );
+                } catch (notificationError) {
+                    console.error(
+                        "Delivery notification failed:",
+                        notificationError.message
+                    );
+                }
+            }
+
+            return res.json({
+                message: "Delivery Partner Assigned Successfully"
             });
-        }
 
-        // 2. Update order
-        const { error: orderError } = await supabase
-            .from("orders")
-            .update({
-                deliveryPartnerId: partner.id,
-                deliveryPartnerName: partner.name,
-                deliveryPartnerEmail: partner.email,
-                status: "Out for Delivery"
-            })
-            .eq("id", req.params.id);
+        } catch (error) {
+            console.error("Assign delivery error:", error.message);
 
-        if (orderError) {
             return res.status(500).json({
-                message: orderError.message
+                message: "Server error while assigning delivery"
             });
         }
-
-        // 3. Make partner Busy
-        const { error: busyError } = await supabase
-            .from("deliveryPartners")
-            .update({
-                status: "Busy"
-            })
-            .eq("id", partner.id);
-
-        if (busyError) {
-            console.log("Partner status error:", busyError.message);
-        }
-
-        // 4. Send notification if FCM token exists
-        if (partner.fcmToken) {
-
-            await sendNotification(
-                partner.fcmToken,
-                "🛵 New Delivery",
-                "A new order has been assigned to you."
-            );
-
-        }
-
-        res.json({
-            message: "Delivery Partner Assigned Successfully"
-        });
-
-    } catch (error) {
-
-        console.error("Assign delivery error:", error);
-
-        res.status(500).json({
-            message: error.message
-        });
-
     }
+);
 
-});
 app.put(
     "/delivery-partners/status",
     authenticateToken,
     requireRole("delivery"),
     async (req, res) => {
-    const { status } = req.body;
+        try {
+            const { status } = req.body;
 
-const allowedStatuses = ["Available", "Busy"];
+            const allowedStatuses = ["Available", "Busy"];
 
-if (!allowedStatuses.includes(status)) {
-    return res.status(400).json({
-        message: "Invalid delivery status"
-    });
-}
+            if (!allowedStatuses.includes(status)) {
+                return res.status(400).json({
+                    message: "Invalid delivery status"
+                });
+            }
 
-const { error } = await supabase
-    .from("deliveryPartners")
-    .update({ status })
-    .eq("email", req.user.email);
+            // Find the logged-in delivery partner
+            const { data: partner, error: partnerError } = await supabase
+                .from("deliveryPartners")
+                .select("id, email, status")
+                .ilike("email", String(req.user.email || ""))
+                .maybeSingle();
 
-    if(error){
-        return res.status(500).json({
-            message:error.message
-        });
+            if (partnerError) {
+                console.error(
+                    "Delivery partner lookup failed:",
+                    partnerError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to retrieve delivery partner"
+                });
+            }
+
+            if (!partner) {
+                return res.status(404).json({
+                    message: "Delivery partner not found"
+                });
+            }
+
+            // Check whether this partner has an active delivery
+            const { data: activeOrders, error: ordersError } = await supabase
+                .from("orders")
+                .select("id")
+                .eq("deliveryPartnerId", partner.id)
+                .in("status", [
+                    "Out for Delivery",
+                    "Preparing",
+                    "Ready"
+                ])
+                .limit(1);
+
+            if (ordersError) {
+                console.error(
+                    "Active order lookup failed:",
+                    ordersError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to verify active deliveries"
+                });
+            }
+
+            // A partner with an active order cannot mark themselves Available
+            if (status === "Available" && activeOrders.length > 0) {
+                return res.status(409).json({
+                    message: "You cannot become available while you have an active delivery"
+                });
+            }
+
+            const { data: updatedPartner, error: updateError } = await supabase
+                .from("deliveryPartners")
+                .update({ status })
+                .eq("id", partner.id)
+                .select("id");
+
+            if (updateError) {
+                console.error(
+                    "Delivery status update failed:",
+                    updateError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to update delivery status"
+                });
+            }
+
+            if (!updatedPartner || updatedPartner.length === 0) {
+                return res.status(409).json({
+                    message: "Delivery status could not be updated"
+                });
+            }
+
+            return res.json({
+                message: "Delivery status updated successfully",
+                status
+            });
+
+        } catch (error) {
+            console.error(
+                "Delivery status route error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                message: "Server error while updating delivery status"
+            });
+        }
     }
-
-    res.json({
-        message:"Status Updated"
-    });
-
-});
+);
 
 app.post(
     "/location",
