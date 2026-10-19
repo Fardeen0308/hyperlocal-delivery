@@ -165,7 +165,6 @@ app.get("/products", async (req, res) => {
                 category,
                 stock,
                 sold,
-                reviews,
                 store_id,
                 stores (
                     store_name
@@ -173,7 +172,10 @@ app.get("/products", async (req, res) => {
             `);
 
         if (error) {
-            console.error("Products fetch failed:", error.message);
+            console.error(
+                "Products fetch failed:",
+                error.message
+            );
 
             return res.status(500).json({
                 message: "Unable to load products"
@@ -182,13 +184,18 @@ app.get("/products", async (req, res) => {
 
         const products = (data || []).map(product => ({
             ...product,
-            store_name: product.stores?.store_name || "Local Store"
+            reviews: product.reviews ?? [],
+            store_name:
+                product.stores?.store_name || "Local Store"
         }));
 
         return res.json(products);
 
     } catch (error) {
-        console.error("Products route error:", error.message);
+        console.error(
+            "Products route error:",
+            error.message
+        );
 
         return res.status(500).json({
             message: "Server error while loading products"
