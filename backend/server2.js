@@ -8,7 +8,6 @@ const multer = require("multer");
 const fs = require("fs");
 
 const express = require("express");
-const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { authenticateToken, requireRole } = require("./authMiddleware");
 const JWT_SECRET = process.env.JWT_SECRET;
