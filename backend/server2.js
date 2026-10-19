@@ -8,6 +8,7 @@ const multer = require("multer");
 const fs = require("fs");
 
 const express = require("express");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { authenticateToken, requireRole } = require("./authMiddleware");
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -411,112 +412,188 @@ app.post(
     authenticateToken,
     requireRole("customer"),
     async (req, res) => {
+        try {
+            const products = req.body.products;
 
-   try {
+            if (
+                !Array.isArray(products) ||
+                products.length === 0 ||
+                products.length > 100
+            ) {
+                return res.status(400).json({
+                    message: "Please provide a valid cart"
+                });
+            }
 
-    const products = req.body.products;
+            // Validate and combine duplicate product IDs
+            const quantities = new Map();
 
-    if (!Array.isArray(products) || products.length === 0) {
-        return res.status(400).json({
-            message: "No products provided"
-        });
+            for (const item of products) {
+                if (
+                    !item ||
+                    (typeof item.id !== "string" &&
+                        typeof item.id !== "number") ||
+                    String(item.id).trim() === ""
+                ) {
+                    return res.status(400).json({
+                        message: "Invalid product ID"
+                    });
+                }
+
+                const quantity = item.quantity === undefined
+                    ? 1
+                    : item.quantity;
+
+                if (
+                    !Number.isSafeInteger(quantity) ||
+                    quantity < 1 ||
+                    quantity > 100
+                ) {
+                    return res.status(400).json({
+                        message: "Each product quantity must be an integer between 1 and 100"
+                    });
+                }
+
+                const id = String(item.id);
+                const combinedQuantity =
+                    (quantities.get(id) || 0) + quantity;
+
+                if (combinedQuantity > 100) {
+                    return res.status(400).json({
+                        message: "Maximum quantity per product is 100"
+                    });
+                }
+
+                quantities.set(id, combinedQuantity);
+            }
+
+            const productIds = [...quantities.keys()];
+
+            // Fetch trusted prices and stock from the database
+            const { data: dbProducts, error: productError } =
+                await supabase
+                    .from("products")
+                    .select("id, name, price, stock")
+                    .in("id", productIds);
+
+            if (productError) {
+                console.error(
+                    "Product lookup failed:",
+                    productError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to validate cart products"
+                });
+            }
+
+            if (
+                !dbProducts ||
+                dbProducts.length !== productIds.length
+            ) {
+                return res.status(400).json({
+                    message: "One or more products were not found"
+                });
+            }
+
+            let subtotalPaise = 0;
+
+            for (const dbProduct of dbProducts) {
+                const quantity = quantities.get(String(dbProduct.id));
+                const price = Number(dbProduct.price);
+                const stock = Number(dbProduct.stock);
+
+                if (
+                    !Number.isFinite(price) ||
+                    price < 0 ||
+                    !Number.isSafeInteger(Math.round(price * 100)) ||
+                    !Number.isFinite(stock) ||
+                    stock < 0
+                ) {
+                    console.error(
+                        "Invalid product price or stock:",
+                        dbProduct.id
+                    );
+
+                    return res.status(500).json({
+                        message: "A product has invalid pricing or stock data"
+                    });
+                }
+
+                if (stock < quantity) {
+                    return res.status(400).json({
+                        message: `${dbProduct.name} does not have enough stock`
+                    });
+                }
+
+                const lineTotalPaise =
+                    Math.round(price * 100) * quantity;
+
+                if (
+                    !Number.isSafeInteger(lineTotalPaise) ||
+                    !Number.isSafeInteger(subtotalPaise + lineTotalPaise)
+                ) {
+                    return res.status(400).json({
+                        message: "Cart total is too large"
+                    });
+                }
+
+                subtotalPaise += lineTotalPaise;
+            }
+
+            // Calculate totals using integer paise
+            const deliveryPaise = 4000; // ₹40
+            const gstPaise = Math.round(subtotalPaise * 0.05);
+            const discountPaise = 0;
+
+            const grandTotalPaise =
+                subtotalPaise +
+                deliveryPaise +
+                gstPaise -
+                discountPaise;
+
+            if (
+                !Number.isSafeInteger(grandTotalPaise) ||
+                grandTotalPaise < 100
+            ) {
+                return res.status(400).json({
+                    message: "Invalid payment amount"
+                });
+            }
+
+            // Create the Razorpay payment order
+            const razorpayOrder = await razorpay.orders.create({
+    amount: grandTotalPaise,
+    currency: "INR",
+    receipt: `receipt_${Date.now()}`,
+    notes: {
+        customerEmail: String(req.user.email).trim().toLowerCase()
     }
-
-    const productIds = products.map(product => product.id);
-
-    const { data: dbProducts, error: productError } =
-        await supabase
-            .from("products")
-            .select("id, name, price, stock")
-            .in("id", productIds);
-
-    if (productError) {
-        return res.status(500).json({
-            message: productError.message
-        });
-    }
-
-    if (!dbProducts || dbProducts.length !== productIds.length) {
-        return res.status(400).json({
-            message: "One or more products were not found"
-        });
-    }
-
-    let subtotal = 0;
-
-    for (const product of products) {
-
-        const dbProduct = dbProducts.find(
-            p => String(p.id) === String(product.id)
-        );
-
-        if (!dbProduct) {
-            return res.status(400).json({
-                message: "Product not found"
-            });
-        }
-
-        const quantity = Number(product.quantity || 1);
-
-        if (quantity <= 0) {
-            return res.status(400).json({
-                message: `Invalid quantity for ${dbProduct.name}`
-            });
-        }
-
-        if (Number(dbProduct.stock) < quantity) {
-            return res.status(400).json({
-                message: `${dbProduct.name} is out of stock`
-            });
-        }
-
-        subtotal += Number(dbProduct.price) * quantity;
-    }
-
-    const delivery = 40;
-    const gst = subtotal * 0.05;
-    const discount = 0;
-
-    const grandTotal =
-        subtotal +
-        delivery +
-        gst -
-        discount;
-
-    const options = {
-        amount: Math.round(grandTotal * 100),
-        currency: "INR",
-        receipt: "receipt_" + Date.now()
-    };
-
-    const order = await razorpay.orders.create(options);
-
-    console.log("RAZORPAY ORDER CREATED:", {
-        razorpayOrderId: order.id,
-        amount: order.amount,
-        subtotal,
-        delivery,
-        gst,
-        grandTotal
-    });
-
-    res.json(order);
-
-} catch (error) {
-
-    console.error(
-        "RAZORPAY CREATE ORDER ERROR:",
-        error
-    );
-
-    res.status(500).json({
-        message:
-            error.message ||
-            "Razorpay order creation failed"
-    });
-}
 });
 
+            return res.status(201).json({
+                ...razorpayOrder,
+                pricing: {
+                    subtotal: subtotalPaise / 100,
+                    delivery: deliveryPaise / 100,
+                    gst: gstPaise / 100,
+                    discount: discountPaise / 100,
+                    grandTotal: grandTotalPaise / 100
+                }
+            });
+
+        } catch (error) {
+            console.error(
+                "Razorpay order creation failed:",
+                error.message
+            );
+
+            return res.status(500).json({
+                message: "Unable to create payment order. Please try again."
+            });
+        }
+    }
+);
 app.get("/bestsellers", async (req, res) => {
     const { data, error } = await supabase
         .from("products")
@@ -544,51 +621,125 @@ app.post(
             } = req.body;
 
             if (
-                !razorpay_order_id ||
-                !razorpay_payment_id ||
-                !razorpay_signature
+                typeof razorpay_order_id !== "string" ||
+                typeof razorpay_payment_id !== "string" ||
+                typeof razorpay_signature !== "string" ||
+                !/^order_[A-Za-z0-9]+$/.test(razorpay_order_id) ||
+                !/^pay_[A-Za-z0-9]+$/.test(razorpay_payment_id) ||
+                !/^[a-fA-F0-9]{64}$/.test(razorpay_signature)
             ) {
                 return res.status(400).json({
                     success: false,
-                    message: "Payment verification details are missing"
+                    message: "Invalid payment verification details"
                 });
             }
 
-            const generatedSignature = crypto
-                .createHmac(
-                    "sha256",
-                    process.env.RAZORPAY_KEY_SECRET
-                )
-                .update(
-                    razorpay_order_id + "|" + razorpay_payment_id
-                )
-                .digest("hex");
+            const secret = process.env.RAZORPAY_KEY_SECRET;
 
-            if (generatedSignature !== razorpay_signature) {
-                return res.status(400).json({
+            if (!secret) {
+                console.error("Razorpay secret is not configured");
+
+                return res.status(500).json({
                     success: false,
-                    message: "Payment verification failed"
+                    message: "Payment verification is temporarily unavailable"
                 });
             }
 
-            console.log(
-                "RAZORPAY PAYMENT VERIFIED:",
-                razorpay_payment_id
+            // Verify the checkout signature using a timing-safe comparison
+            const expectedSignature = crypto
+                .createHmac("sha256", secret)
+                .update(
+                    `${razorpay_order_id}|${razorpay_payment_id}`
+                )
+                .digest();
+
+            const receivedSignature = Buffer.from(
+                razorpay_signature,
+                "hex"
             );
 
-            res.json({
+            if (
+                receivedSignature.length !== expectedSignature.length ||
+                !crypto.timingSafeEqual(
+                    expectedSignature,
+                    receivedSignature
+                )
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payment signature verification failed"
+                });
+            }
+
+            // Fetch authoritative order and payment details from Razorpay
+            const [rzpOrder, payment] = await Promise.all([
+                razorpay.orders.fetch(razorpay_order_id),
+                razorpay.payments.fetch(razorpay_payment_id)
+            ]);
+
+            const customerEmail = String(
+                req.user.email || ""
+            ).trim().toLowerCase();
+
+            const orderCustomerEmail = String(
+                rzpOrder.notes?.customerEmail || ""
+            ).trim().toLowerCase();
+
+            // Confirm order ownership and payment/order linkage
+            if (
+                rzpOrder.id !== razorpay_order_id ||
+                orderCustomerEmail !== customerEmail ||
+                payment.id !== razorpay_payment_id ||
+                payment.order_id !== razorpay_order_id
+            ) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Payment does not match this customer's order"
+                });
+            }
+
+            // Verify the amount and currency against Razorpay's order record
+            if (
+                payment.amount !== rzpOrder.amount ||
+                payment.currency !== rzpOrder.currency ||
+                rzpOrder.currency !== "INR"
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payment amount or currency does not match"
+                });
+            }
+
+            // Only a captured payment is considered successful
+            if (
+                payment.status !== "captured" ||
+                payment.captured !== true ||
+                rzpOrder.status !== "paid"
+            ) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Payment is not yet confirmed as captured"
+                });
+            }
+
+            return res.json({
                 success: true,
                 message: "Payment verified successfully",
-                razorpay_order_id,
-                razorpay_payment_id
+                razorpay_order_id: rzpOrder.id,
+                razorpay_payment_id: payment.id,
+                amount: payment.amount,
+                currency: payment.currency
             });
 
         } catch (error) {
-            console.error("PAYMENT VERIFICATION ERROR:", error);
+            console.error(
+                "Payment verification error:",
+                error.message
+            );
 
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
-                message: "Payment verification failed"
+                message: "Unable to verify payment at this time"
             });
         }
     }
@@ -962,266 +1113,363 @@ app.post(
     authenticateToken,
     requireRole("customer"),
     async (req, res) => {
+        try {
+            const {
+                customerName,
+                phone,
+                address,
+                products,
+                payment,
+                razorpay_order_id,
+                razorpay_payment_id
+            } = req.body;
 
-    try {
-
-        const deliveryOtp =
-            Math.floor(1000 + Math.random() * 9000).toString();
-
+            // 1. Validate customer details
             if (
-    req.body.payment !== "Cash on Delivery" &&
-    req.body.status === "Payment Verified"
-) {
-    if (
-        !req.body.razorpay_order_id ||
-        !req.body.razorpay_payment_id
-    ) {
-        return res.status(400).json({
-            message: "Verified payment details are required"
-        });
-    }
-}
-
-        // Get product IDs from the cart
-        const productIds = req.body.products.map(product =>
-            product.id
-        );
-
-        // Get store_id from the real products table
-        const { data: dbProducts, error: productError } =
-            await supabase
-                .from("products")
-                .select("id, store_id, name, price, stock, sold")
-                .in("id", productIds);
-
-        if (productError) {
-            return res.status(500).json({
-                message: productError.message
-            });
-        }
-for (const product of req.body.products) {
-
-    const dbProduct = dbProducts.find(
-        p => String(p.id) === String(product.id)
-    );
-
-    if (!dbProduct) {
-        return res.status(400).json({
-            message: `Product not found: ${product.id}`
-        });
-    }
-
-    const quantity = Number(product.quantity || 1);
-
-    if (quantity <= 0) {
-        return res.status(400).json({
-            message: `Invalid quantity for ${dbProduct.name}`
-        });
-    }
-
-    if (Number(dbProduct.stock) < quantity) {
-        return res.status(400).json({
-            message: `${dbProduct.name} is out of stock or has insufficient stock`
-        });
-    }
-}
-let serverSubtotal = 0;
-
-for (const product of req.body.products) {
-
-    const dbProduct = dbProducts.find(
-        p => String(p.id) === String(product.id)
-    );
-
-    const quantity = Number(product.quantity || 1);
-
-    serverSubtotal +=
-        Number(dbProduct.price) * quantity;
-}
-const serverDelivery = 40;
-const serverGst = serverSubtotal * 0.05;
-const serverDiscount = 0;
-const serverGrandTotal =
-    serverSubtotal +
-    serverDelivery +
-    serverGst -
-    serverDiscount;
-
-    // Verify Razorpay payment directly with Razorpay
-if (
-    req.body.payment !== "Cash on Delivery" &&
-    req.body.status === "Payment Verified"
-) {
-    if (
-        !req.body.razorpay_order_id ||
-        !req.body.razorpay_payment_id
-    ) {
-        return res.status(400).json({
-            message: "Razorpay payment details are required"
-        });
-    }
-
-    const razorpayOrder =
-        await razorpay.orders.fetch(
-            req.body.razorpay_order_id
-        );
-
-    const razorpayPayment =
-        await razorpay.payments.fetch(
-            req.body.razorpay_payment_id
-        );
-
-    const expectedAmount =
-        Math.round(serverGrandTotal * 100);
-
-    if (
-        razorpayOrder.id !==
-            req.body.razorpay_order_id
-    ) {
-        return res.status(400).json({
-            message: "Invalid Razorpay order"
-        });
-    }
-
-    if (
-        razorpayPayment.order_id !==
-            req.body.razorpay_order_id
-    ) {
-        return res.status(400).json({
-            message: "Payment does not belong to this order"
-        });
-    }
-
-    if (
-        Number(razorpayOrder.amount) !==
-            expectedAmount
-    ) {
-        return res.status(400).json({
-            message: "Payment amount does not match order total"
-        });
-    }
-
-    if (razorpayPayment.status !== "captured") {
-        return res.status(400).json({
-            message: "Payment has not been captured"
-        });
-    }
-}
-
-        // Add store_id to every product saved inside the order
-        const orderProducts = req.body.products.map(product => {
-
-            const dbProduct = dbProducts.find(
-                p => String(p.id) === String(product.id)
-            );
-
-            return {
-                ...product,
-                store_id: dbProduct ? dbProduct.store_id : null
-            };
-
-        });
-
-        // Create order
-        const { data, error } = await supabase
-            .from("orders")
-            .insert([{
-                customerName: req.body.customerName,
-                email: req.user.email,
-                phone: req.body.phone,
-                address: req.body.address,
-
-                // IMPORTANT:
-                // Save products with store_id
-                products: orderProducts,
-
-                subtotal: serverSubtotal,
-delivery: serverDelivery,
-gst: serverGst,
-discount: serverDiscount,
-grandTotal: serverGrandTotal,
-                payment: req.body.payment,
-status: req.body.status,
-
-razorpay_order_id:
-    req.body.razorpay_order_id || null,
-
-razorpay_payment_id:
-    req.body.razorpay_payment_id || null,
-
-deliveryOtp: deliveryOtp
-            }])
-            .select();
-
-        if (error) {
-            return res.status(500).json({
-                message: error.message
-            });
-        }
-
-        // Update stock and sold count
-        for (const product of req.body.products) {
-
-            const { data: dbProduct } = await supabase
-                .from("products")
-                .select("stock, sold")
-                .eq("id", product.id)
-                .single();
-
-            if (dbProduct) {
-
-                await supabase
-                    .from("products")
-                    .update({
-                        stock:
-                            Number(dbProduct.stock) -
-                            Number(product.quantity || 1),
-
-                        sold:
-                            Number(dbProduct.sold || 0) +
-                            Number(product.quantity || 1)
-                    })
-                    .eq("id", product.id)
-.gte("stock", Number(product.quantity || 1));
+                typeof customerName !== "string" ||
+                !customerName.trim() ||
+                typeof phone !== "string" ||
+                !phone.trim() ||
+                typeof address !== "string" ||
+                !address.trim()
+            ) {
+                return res.status(400).json({
+                    message: "Valid customer and delivery details are required"
+                });
             }
 
-        }
+            if (
+                !Array.isArray(products) ||
+                products.length === 0 ||
+                products.length > 100
+            ) {
+                return res.status(400).json({
+                    message: "Invalid order products"
+                });
+            }
 
-        // Send notification to customer
-        const { data: user } = await supabase
-            .from("users")
-            .select("fcmToken")
-            .eq("email", req.user.email)
-            .single();
+            if (
+                typeof payment !== "string" ||
+                !payment.trim()
+            ) {
+                return res.status(400).json({
+                    message: "Payment method is required"
+                });
+            }
 
-        if (user && user.fcmToken) {
+            const isCOD = payment === "Cash on Delivery";
 
-            await sendNotification(
-                user.fcmToken,
-                "📦 Order Confirmed",
-                "Your order has been placed successfully."
+            // 2. Validate quantities and combine duplicate product IDs
+            const cart = new Map();
+
+            for (const item of products) {
+                const id = Number(item?.id);
+                const quantity = Number(item?.quantity ?? 1);
+
+                if (
+                    !Number.isSafeInteger(id) ||
+                    id <= 0 ||
+                    !Number.isSafeInteger(quantity) ||
+                    quantity < 1 ||
+                    quantity > 100
+                ) {
+                    return res.status(400).json({
+                        message: "Invalid product ID or quantity"
+                    });
+                }
+
+                const combined = (cart.get(id) || 0) + quantity;
+
+                if (combined > 100) {
+                    return res.status(400).json({
+                        message: "Maximum quantity per product is 100"
+                    });
+                }
+
+                cart.set(id, combined);
+            }
+
+            const productIds = [...cart.keys()];
+
+            // 3. Get real product prices and stock from Supabase
+            const {
+                data: dbProducts,
+                error: productError
+            } = await supabase
+                .from("products")
+                .select("id, name, price, stock, store_id")
+                .in("id", productIds);
+
+            if (productError) {
+                console.error(
+                    "Product lookup failed:",
+                    productError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to validate products"
+                });
+            }
+
+            if (
+                !dbProducts ||
+                dbProducts.length !== productIds.length
+            ) {
+                return res.status(400).json({
+                    message: "One or more products were not found"
+                });
+            }
+
+            const productMap = new Map(
+                dbProducts.map(product => [
+                    Number(product.id),
+                    product
+                ])
             );
 
+            let subtotalPaise = 0;
+            const orderProducts = [];
+
+            for (const [id, quantity] of cart.entries()) {
+                const product = productMap.get(id);
+                const price = Number(product.price);
+                const stock = Number(product.stock);
+
+                if (
+                    !Number.isFinite(price) ||
+                    price < 0 ||
+                    !Number.isFinite(stock) ||
+                    stock < 0
+                ) {
+                    return res.status(400).json({
+                        message: "Invalid price or stock for " + product.name
+                    });
+                }
+
+                if (stock < quantity) {
+                    return res.status(409).json({
+                        message: product.name +
+                            " has insufficient stock"
+                    });
+                }
+
+                const pricePaise = Math.round(price * 100);
+
+                if (
+                    Math.abs(price * 100 - pricePaise) > 0.000001
+                ) {
+                    return res.status(400).json({
+                        message: "Invalid product price configuration"
+                    });
+                }
+
+                subtotalPaise += pricePaise * quantity;
+
+                orderProducts.push({
+                    id: product.id,
+                    name: product.name,
+                    price: pricePaise / 100,
+                    quantity,
+                    store_id: product.store_id
+                });
+            }
+
+            if (!Number.isSafeInteger(subtotalPaise)) {
+                return res.status(400).json({
+                    message: "Order amount is too large"
+                });
+            }
+
+            // 4. Calculate totals on the server
+            const deliveryPaise = 4000;
+            const gstPaise = Math.round(subtotalPaise * 0.05);
+            const discountPaise = 0;
+
+            const grandTotalPaise =
+                subtotalPaise +
+                deliveryPaise +
+                gstPaise -
+                discountPaise;
+
+            if (!Number.isSafeInteger(grandTotalPaise)) {
+                return res.status(400).json({
+                    message: "Order amount is too large"
+                });
+            }
+
+            const subtotal = subtotalPaise / 100;
+            const delivery = deliveryPaise / 100;
+            const gst = gstPaise / 100;
+            const discount = discountPaise / 100;
+            const grandTotal = grandTotalPaise / 100;
+
+            // 5. Verify online payment directly with Razorpay
+            let paymentVerified = false;
+
+            if (!isCOD) {
+                if (
+                    typeof razorpay_order_id !== "string" ||
+                    typeof razorpay_payment_id !== "string" ||
+                    !razorpay_order_id ||
+                    !razorpay_payment_id
+                ) {
+                    return res.status(400).json({
+                        message: "Razorpay payment details are required"
+                    });
+                }
+
+                let razorpayOrder;
+                let razorpayPayment;
+
+                try {
+                    [
+                        razorpayOrder,
+                        razorpayPayment
+                    ] = await Promise.all([
+                        razorpay.orders.fetch(razorpay_order_id),
+                        razorpay.payments.fetch(razorpay_payment_id)
+                    ]);
+                } catch (error) {
+                    console.error(
+                        "Razorpay verification failed:",
+                        error.message
+                    );
+
+                    return res.status(400).json({
+                        message: "Unable to verify payment"
+                    });
+                }
+
+                const orderEmail =
+                    razorpayOrder.notes?.customerEmail;
+
+                if (
+                    razorpayOrder.id !== razorpay_order_id ||
+                    razorpayOrder.status !== "paid" ||
+                    Number(razorpayOrder.amount) !== grandTotalPaise ||
+                    razorpayOrder.currency !== "INR" ||
+                    typeof orderEmail !== "string" ||
+                    orderEmail.toLowerCase() !==
+                        req.user.email.toLowerCase() ||
+                    razorpayPayment.id !== razorpay_payment_id ||
+                    razorpayPayment.order_id !== razorpay_order_id ||
+                    razorpayPayment.status !== "captured" ||
+                    razorpayPayment.captured !== true ||
+                    Number(razorpayPayment.amount) !== grandTotalPaise ||
+                    razorpayPayment.currency !== "INR"
+                ) {
+                    return res.status(400).json({
+                        message: "Payment verification failed"
+                    });
+                }
+
+                paymentVerified = true;
+            }
+
+            // 6. Server-controlled status and secure delivery OTP
+            const orderStatus = paymentVerified
+                ? "Payment Verified"
+                : "Pending";
+
+            const deliveryOtp =
+                crypto.randomInt(1000, 10000).toString();
+
+            // 7. Atomically deduct stock and create the order
+            const {
+                data: order,
+                error: orderError
+            } = await supabase.rpc("place_order_atomic", {
+                p_customer_name: customerName.trim(),
+                p_email: req.user.email,
+                p_phone: phone.trim(),
+                p_address: address.trim(),
+                p_products: orderProducts,
+                p_subtotal: subtotal,
+                p_delivery: delivery,
+                p_gst: gst,
+                p_discount: discount,
+                p_grand_total: grandTotal,
+                p_payment: payment,
+                p_status: orderStatus,
+                p_razorpay_order_id: paymentVerified
+                    ? razorpay_order_id
+                    : null,
+                p_razorpay_payment_id: paymentVerified
+                    ? razorpay_payment_id
+                    : null,
+                p_delivery_otp: deliveryOtp,
+                p_payment_verified: paymentVerified
+            });
+
+            if (orderError) {
+                console.error(
+                    "Atomic order creation failed:",
+                    orderError.message
+                );
+
+                if (
+                    orderError.message?.includes(
+                        "insufficient stock"
+                    )
+                ) {
+                    return res.status(409).json({
+                        message: "Stock changed. Please refresh your cart."
+                    });
+                }
+
+                if (
+                    orderError.code === "23505" &&
+                    paymentVerified
+                ) {
+                    return res.status(409).json({
+                        message: "This payment has already been used"
+                    });
+                }
+
+                return res.status(500).json({
+                    message: "Unable to place order"
+                });
+            }
+
+            // 8. Notification failures must not undo a saved order
+            try {
+                const { data: user } = await supabase
+                    .from("users")
+                    .select("fcmToken")
+                    .eq("email", req.user.email)
+                    .maybeSingle();
+
+                if (user?.fcmToken) {
+                    await sendNotification(
+                        user.fcmToken,
+                        "Order Confirmed",
+                        "Your order has been placed successfully."
+                    );
+                }
+            } catch (notificationError) {
+                console.error(
+                    "Order notification failed:",
+                    notificationError.message
+                );
+            }
+
+            return res.status(201).json({
+                message: "Order Placed Successfully",
+                order
+            });
+
+        } catch (error) {
+            console.error(
+                "Create order error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                message: "Unable to place order"
+            });
         }
-
-        console.log("After sendNotification");
-
-        res.json({
-            message: "Order Placed Successfully",
-            order: data
-        });
-
-    } catch (error) {
-
-        console.error("Create order error:", error);
-
-        res.status(500).json({
-            message: error.message
-        });
-
     }
-
-});
+);
 app.get(
     "/myorders/:email",
     authenticateToken,
@@ -1717,25 +1965,108 @@ app.delete(
     authenticateToken,
     requireRole("admin"),
     async (req, res) => {
+        try {
+            const { id } = req.params;
 
-    const { id } = req.params;
+            if (!id || !id.trim()) {
+                return res.status(400).json({
+                    message: "Delivery partner ID is required"
+                });
+            }
 
-    const { error } = await supabase
-        .from("deliveryPartners")
-        .delete()
-        .eq("id", id);
+            // Check whether the delivery partner exists
+            const { data: partner, error: partnerError } = await supabase
+                .from("deliveryPartners")
+                .select("id, name")
+                .eq("id", id)
+                .maybeSingle();
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+            if (partnerError) {
+                console.error(
+                    "Partner lookup failed:",
+                    partnerError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to retrieve delivery partner"
+                });
+            }
+
+            if (!partner) {
+                return res.status(404).json({
+                    message: "Delivery partner not found"
+                });
+            }
+
+            // Check for active deliveries before deletion
+            const { data: activeOrders, error: ordersError } = await supabase
+                .from("orders")
+                .select("id")
+                .eq("deliveryPartnerId", partner.id)
+                .in("status", [
+                    "Out for Delivery",
+                    "Preparing",
+                    "Ready"
+                ])
+                .limit(1);
+
+            if (ordersError) {
+                console.error(
+                    "Active delivery lookup failed:",
+                    ordersError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to verify the partner's active deliveries"
+                });
+            }
+
+            if (activeOrders && activeOrders.length > 0) {
+                return res.status(409).json({
+                    message: "Cannot delete a delivery partner with active deliveries"
+                });
+            }
+
+            // Delete only after the checks pass
+            const { data: deletedPartner, error: deleteError } = await supabase
+                .from("deliveryPartners")
+                .delete()
+                .eq("id", partner.id)
+                .select("id");
+
+            if (deleteError) {
+                console.error(
+                    "Partner deletion failed:",
+                    deleteError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to delete delivery partner"
+                });
+            }
+
+            if (!deletedPartner || deletedPartner.length === 0) {
+                return res.status(409).json({
+                    message: "Partner could not be deleted"
+                });
+            }
+
+            return res.json({
+                message: "Delivery Partner Deleted Successfully"
+            });
+
+        } catch (error) {
+            console.error(
+                "Delete delivery partner error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                message: "Server error while deleting delivery partner"
+            });
+        }
     }
-
-    res.json({
-        message: "Delivery Partner Deleted Successfully"
-    });
-
-});
+);
 
 app.put(
     "/assign-delivery/:id",
@@ -1743,9 +2074,18 @@ app.put(
     requireRole("admin"),
     async (req, res) => {
         try {
-            const partnerEmail = String(req.body.email || "")
-                .trim()
-                .toLowerCase();
+            const orderId = req.params.id;
+
+            const partnerEmail =
+                typeof req.body.email === "string"
+                    ? req.body.email.trim().toLowerCase()
+                    : "";
+
+            if (!orderId || !orderId.trim()) {
+                return res.status(400).json({
+                    message: "Order ID is required"
+                });
+            }
 
             if (!partnerEmail) {
                 return res.status(400).json({
@@ -1753,15 +2093,19 @@ app.put(
                 });
             }
 
-            // Find the order
+            // Retrieve the order
             const { data: order, error: orderFetchError } = await supabase
                 .from("orders")
                 .select("id, status, deliveryPartnerId")
-                .eq("id", req.params.id)
+                .eq("id", orderId)
                 .maybeSingle();
 
             if (orderFetchError) {
-                console.error("Order lookup failed:", orderFetchError.message);
+                console.error(
+                    "Order lookup failed:",
+                    orderFetchError.message
+                );
+
                 return res.status(500).json({
                     message: "Unable to retrieve order"
                 });
@@ -1774,12 +2118,19 @@ app.put(
             }
 
             if (["Delivered", "Cancelled"].includes(order.status)) {
-                return res.status(400).json({
-                    message: "This order cannot be assigned"
+                return res.status(409).json({
+                    message: "Delivered or cancelled orders cannot be assigned"
                 });
             }
 
-            // Find an available delivery partner
+            // Do not overwrite an existing assignment
+            if (order.deliveryPartnerId) {
+                return res.status(409).json({
+                    message: "This order already has a delivery partner assigned"
+                });
+            }
+
+            // Find the selected delivery partner
             const { data: partner, error: partnerError } = await supabase
                 .from("deliveryPartners")
                 .select("id, name, email, status, fcmToken")
@@ -1787,7 +2138,11 @@ app.put(
                 .maybeSingle();
 
             if (partnerError) {
-                console.error("Partner lookup failed:", partnerError.message);
+                console.error(
+                    "Partner lookup failed:",
+                    partnerError.message
+                );
+
                 return res.status(500).json({
                     message: "Unable to retrieve delivery partner"
                 });
@@ -1805,7 +2160,37 @@ app.put(
                 });
             }
 
-            // Assign the order
+            // Check whether the partner already has an active delivery
+            const { data: activeOrders, error: activeOrdersError } =
+                await supabase
+                    .from("orders")
+                    .select("id")
+                    .eq("deliveryPartnerId", partner.id)
+                    .in("status", [
+                        "Preparing",
+                        "Ready",
+                        "Out for Delivery"
+                    ])
+                    .limit(1);
+
+            if (activeOrdersError) {
+                console.error(
+                    "Active delivery lookup failed:",
+                    activeOrdersError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to verify partner availability"
+                });
+            }
+
+            if (activeOrders && activeOrders.length > 0) {
+                return res.status(409).json({
+                    message: "This partner already has an active delivery"
+                });
+            }
+
+            // Conditional order update: do not overwrite an existing assignment
             const { data: updatedOrder, error: orderError } = await supabase
                 .from("orders")
                 .update({
@@ -1814,11 +2199,17 @@ app.put(
                     deliveryPartnerEmail: partner.email,
                     status: "Out for Delivery"
                 })
-                .eq("id", req.params.id)
+                .eq("id", orderId)
+                .is("deliveryPartnerId", null)
+                .not("status", "in", '("Delivered","Cancelled")')
                 .select("id");
 
             if (orderError) {
-                console.error("Order assignment failed:", orderError.message);
+                console.error(
+                    "Order assignment failed:",
+                    orderError.message
+                );
+
                 return res.status(500).json({
                     message: "Unable to assign delivery partner"
                 });
@@ -1826,17 +2217,22 @@ app.put(
 
             if (!updatedOrder || updatedOrder.length === 0) {
                 return res.status(409).json({
-                    message: "Order assignment could not be confirmed"
+                    message: "The order changed or was assigned by another request. Refresh and try again."
                 });
             }
 
+            // Mark the partner busy
             const { error: busyError } = await supabase
                 .from("deliveryPartners")
                 .update({ status: "Busy" })
-                .eq("id", partner.id);
+                .eq("id", partner.id)
+                .eq("status", "Available");
 
             if (busyError) {
-                console.error("Partner status update failed:", busyError.message);
+                console.error(
+                    "Partner status update failed:",
+                    busyError.message
+                );
 
                 return res.status(500).json({
                     message: "Order assigned, but partner status needs attention"
@@ -1863,7 +2259,10 @@ app.put(
             });
 
         } catch (error) {
-            console.error("Assign delivery error:", error.message);
+            console.error(
+                "Assign delivery error:",
+                error.message
+            );
 
             return res.status(500).json({
                 message: "Server error while assigning delivery"
@@ -1871,7 +2270,6 @@ app.put(
         }
     }
 );
-
 app.put(
     "/delivery-partners/status",
     authenticateToken,
@@ -2111,138 +2509,201 @@ app.post(
     authenticateToken,
     requireRole("delivery"),
     async (req, res) => {
+        try {
+            const orderId = req.params.id;
+            const submittedOtp = req.body?.otp;
 
-    try {
+            if (
+                typeof submittedOtp !== "string" ||
+                !/^\d{4}$/.test(submittedOtp)
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please enter a valid 4-digit OTP."
+                });
+            }
 
-        // 1. Get order
-        const { data: order, error: fetchError } = await supabase
-            .from("orders")
-            .select("*")
-            .eq("id", req.params.id)
-            .single();
+            // 1. Fetch order
+            const { data: order, error: fetchError } =
+                await supabase
+                    .from("orders")
+                    .select("*")
+                    .eq("id", orderId)
+                    .single();
 
-        if (fetchError || !order) {
-            return res.status(404).json({
-                success: false,
-                message: "Order not found"
-            });
-        }
+            if (fetchError || !order) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Order not found."
+                });
+            }
 
-        if (order.deliveryPartnerEmail !== req.user.email) {
-    return res.status(403).json({
-        success: false,
-        message: "This order is not assigned to you."
-    });
-}
+            // 2. Verify assigned delivery partner
+            if (
+                order.deliveryPartnerEmail?.toLowerCase() !==
+                req.user.email?.toLowerCase()
+            ) {
+                return res.status(403).json({
+                    success: false,
+                    message: "This order is not assigned to you."
+                });
+            }
 
-        // 2. Check OTP
-        if (order.deliveryOtp !== req.body.otp) {
-            return res.json({
-                success: false,
-                message: "❌ Invalid OTP"
-            });
-        }
+            // 3. Prevent duplicate completion
+            if (order.status === "Delivered") {
+                return res.status(409).json({
+                    success: false,
+                    message: "This order is already delivered."
+                });
+            }
 
-        // 3. Prevent completing the same order twice
-        if (order.status === "Delivered") {
-            return res.json({
-                success: false,
-                message: "This order is already delivered."
-            });
-        }
+            if (!order.deliveryPartnerEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No delivery partner assigned."
+                });
+            }
 
-        // 4. Make sure partner is assigned
-        if (!order.deliveryPartnerEmail) {
-            return res.json({
-                success: false,
-                message: "No delivery partner assigned."
-            });
-        }
+            // 4. Verify OTP
+            if (
+                typeof order.deliveryOtp !== "string" ||
+                submittedOtp !== order.deliveryOtp
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid OTP."
+                });
+            }
 
-        // 5. Get delivery partner
-        const { data: partner, error: partnerError } =
-            await supabase
+            // 5. Confirm delivery partner exists
+            const { data: partner, error: partnerError } =
+                await supabase
+                    .from("deliveryPartners")
+                    .select("email")
+                    .eq("email", order.deliveryPartnerEmail)
+                    .single();
+
+            if (partnerError || !partner) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Delivery partner not found."
+                });
+            }
+
+            // 6. Conditionally mark order as delivered.
+            // Only one concurrent request can update this status.
+            const { data: updatedOrder, error: updateError } =
+                await supabase
+                    .from("orders")
+                    .update({ status: "Delivered" })
+                    .eq("id", orderId)
+                    .eq("status", order.status)
+                    .select("id")
+                    .maybeSingle();
+
+            if (updateError) {
+                console.error(
+                    "Order delivery update failed:",
+                    updateError.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    message: "Unable to complete delivery."
+                });
+            }
+
+            if (!updatedOrder) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Order status changed. Please refresh."
+                });
+            }
+
+            // 7. Validate delivery earnings
+            const earning = Number(order.earning || 0);
+
+            if (!Number.isFinite(earning) || earning < 0) {
+                console.error(
+                    "Invalid delivery earning for order:",
+                    orderId
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Delivery completed, but earnings need administrator review."
+                });
+            }
+
+            // 8. Get current partner statistics
+            const {
+                data: currentPartner,
+                error: statsFetchError
+            } = await supabase
                 .from("deliveryPartners")
-                .select("*")
+                .select("totalDeliveries, totalEarnings")
                 .eq("email", order.deliveryPartnerEmail)
                 .single();
 
-        if (partnerError || !partner) {
-            return res.status(404).json({
-                success: false,
-                message: "Delivery partner not found."
-            });
-        }
+            if (statsFetchError || !currentPartner) {
+                console.error(
+                    "Partner statistics lookup failed:",
+                    statsFetchError?.message
+                );
 
-        // 6. Mark order as Delivered
-        const { error: orderError } = await supabase
-            .from("orders")
-            .update({
-                status: "Delivered"
-            })
-            .eq("id", req.params.id);
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Delivery completed, but partner statistics need review."
+                });
+            }
 
-        if (orderError) {
-            return res.status(500).json({
-                success: false,
-                message: orderError.message
-            });
-        }
-
-        // 7. Get existing earning from order
-        const earning = Number(order.earning || 0);
-
-        // 8. Update delivery partner statistics
-        const totalDeliveries =
-            Number(partner.totalDeliveries || 0) + 1;
-
-        const totalEarnings =
-            Number(partner.totalEarnings || 0) + earning;
-
-        const { error: partnerUpdateError } =
-            await supabase
+            // 9. Update partner statistics
+            const { error: statsUpdateError } = await supabase
                 .from("deliveryPartners")
                 .update({
                     status: "Available",
-                    totalDeliveries: totalDeliveries,
-                    totalEarnings: totalEarnings
+                    totalDeliveries:
+                        Number(currentPartner.totalDeliveries || 0) + 1,
+                    totalEarnings:
+                        Number(currentPartner.totalEarnings || 0) + earning
                 })
                 .eq("email", order.deliveryPartnerEmail);
 
-        if (partnerUpdateError) {
-            console.log(
-                "Partner update error:",
-                partnerUpdateError.message
+            if (statsUpdateError) {
+                console.error(
+                    "Partner statistics update failed:",
+                    statsUpdateError.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Delivery completed, but partner statistics need review."
+                });
+            }
+
+            console.log("Order delivered:", orderId);
+
+            return res.json({
+                success: true,
+                message: "Delivery completed successfully."
+            });
+
+        } catch (error) {
+            console.error(
+                "Verify OTP error:",
+                error.message
             );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to verify delivery OTP."
+            });
         }
-
-        // 9. Notify customer
-        console.log(
-            "Order delivered:",
-            order.id
-        );
-
-        // 10. Success
-        res.json({
-            success: true,
-            message: "✅ Delivery Completed Successfully"
-        });
-
-    } catch (error) {
-
-        console.error(
-            "Verify OTP error:",
-            error
-        );
-
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
     }
-
-});
+);
 app.get(
     "/notifications/:email",
     authenticateToken,
