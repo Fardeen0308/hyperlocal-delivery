@@ -1,12 +1,12 @@
 let previousOrders = 0;
 
-const user = JSON.parse(localStorage.getItem("user"));
+const deliveryuser = JSON.parse(localStorage.getItem("user"));
 
-if (!user) {
+if (!deliveryuser) {
     window.location.href = "login.html";
 }
 
-if (user.role !== "delivery") {
+if (deliveryuser.role !== "delivery") {
     alert("Access Denied");
     window.location.href = "login.html";
 }
@@ -32,7 +32,7 @@ async function loadOrders() {
 
         if (
             order.status === "Out for Delivery" &&
-            order.deliveryPartnerEmail === user.email
+            order.deliveryPartnerEmail === deliveryuser.email
         ) {
             activeOrders++;
 
@@ -140,7 +140,7 @@ function sendLocation() {
     "Authorization": "Bearer " + localStorage.getItem("token")
 },
                     body: JSON.stringify({
-                        email: user.email,
+                        email: deliveryuser.email,
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     })
@@ -155,7 +155,7 @@ function sendLocation() {
 async function loadStats() {
 
     const response = await fetch(
-    "https://hyperlocal-backend-84rs.onrender.com/delivery-earnings/" + user.email,
+    "https://hyperlocal-backend-84rs.onrender.com/delivery-earnings/" + deliveryuser.email,
     {
         headers: {
             "Authorization": "Bearer " + localStorage.getItem("token")
@@ -195,7 +195,7 @@ async function toggleStatus() {
     "Authorization": "Bearer " + localStorage.getItem("token")
 },
             body: JSON.stringify({
-                email: user.email,
+                email: deliveryuser.email,
                 status: currentStatus
             })
         }
