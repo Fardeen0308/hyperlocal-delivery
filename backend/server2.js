@@ -3585,6 +3585,165 @@ app.get(
 
     }
 );
+
+app.get(
+    "/chat/:otherEmail",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const currentEmail = String(req.user.email || "")
+                .trim()
+                .toLowerCase();
+
+            const otherEmail = String(req.params.otherEmail || "")
+                .trim()
+                .toLowerCase();
+
+            if (!currentEmail || !otherEmail || currentEmail === otherEmail) {
+                return res.status(400).json({
+                    message: "Invalid chat participants"
+                });
+            }
+
+            // Only chat with a delivery partner assigned to the customer,
+            // or a customer whose order is assigned to this delivery partner.
+            let allowed = false;
+
+            if (req.user.role === "customer") {
+                const { data, error } = await supabase
+                    .from("orders")
+                    .select("id")
+                    .ilike("email", currentEmail)
+                    .ilike("deliveryPartnerEmail", otherEmail)
+                    .eq("status", "Out for Delivery")
+                    .limit(1);
+
+                if (error) throw error;
+                allowed = !!data?.length;
+            } else if (req.user.role === "delivery") {
+                const { data, error } = await supabase
+                    .from("orders")
+                    .select("id")
+                    .ilike("email", otherEmail)
+                    .ilike("deliveryPartnerEmail", currentEmail)
+                    .eq("status", "Out for Delivery")
+                    .limit(1);
+
+                if (error) throw error;
+                allowed = !!data?.length;
+            }
+
+            if (!allowed) {
+                return res.status(403).json({
+                    message: "No active delivery chat is available"
+                });
+            }
+
+            const { data, error } = await supabase
+                .from("chat")
+                .select("id, sender, receiver, message, time")
+                .or(
+                    `and(sender.eq.${currentEmail},receiver.eq.${otherEmail}),` +
+                    `and(sender.eq.${otherEmail},receiver.eq.${currentEmail})`
+                )
+                .order("time", { ascending: true })
+                .limit(500);
+
+            if (error) throw error;
+
+            return res.json(data || []);
+        } catch (error) {
+            console.error("Load chat error:", error.message);
+            return res.status(500).json({
+                message: "Unable to load messages"
+            });
+        }
+    }
+);
+
+app.post(
+    "/chat",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const sender = String(req.user.email || "")
+                .trim()
+                .toLowerCase();
+
+            const receiver = String(req.body.receiver || "")
+                .trim()
+                .toLowerCase();
+
+            const message = String(req.body.message || "").trim();
+
+            if (!sender || !receiver || sender === receiver) {
+                return res.status(400).json({
+                    message: "Invalid chat participants"
+                });
+            }
+
+            if (!message || message.length > 1000) {
+                return res.status(400).json({
+                    message: "Message must contain 1–1000 characters"
+                });
+            }
+
+            let allowed = false;
+
+            if (req.user.role === "customer") {
+                const { data, error } = await supabase
+                    .from("orders")
+                    .select("id")
+                    .ilike("email", sender)
+                    .ilike("deliveryPartnerEmail", receiver)
+                    .eq("status", "Out for Delivery")
+                    .limit(1);
+
+                if (error) throw error;
+                allowed = !!data?.length;
+            } else if (req.user.role === "delivery") {
+                const { data, error } = await supabase
+                    .from("orders")
+                    .select("id")
+                    .ilike("email", receiver)
+                    .ilike("deliveryPartnerEmail", sender)
+                    .eq("status", "Out for Delivery")
+                    .limit(1);
+
+                if (error) throw error;
+                allowed = !!data?.length;
+            }
+
+            if (!allowed) {
+                return res.status(403).json({
+                    message: "You can only message a customer or partner assigned to an active delivery"
+                });
+            }
+
+            const { data, error } = await supabase
+                .from("chat")
+                .insert([{
+                    sender,
+                    receiver,
+                    message
+                }])
+                .select("id, sender, receiver, message, time")
+                .single();
+
+            if (error) throw error;
+
+            return res.status(201).json({
+                message: "Message sent",
+                chat: data
+            });
+        } catch (error) {
+            console.error("Send chat error:", error.message);
+            return res.status(500).json({
+                message: "Unable to send message"
+            });
+        }
+    }
+);
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
