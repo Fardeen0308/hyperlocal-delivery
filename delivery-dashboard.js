@@ -13,7 +13,7 @@ if (deliveryuser.role !== "delivery") {
 
 async function loadOrders() {
 
-    const response = await fetch(
+   const response = await fetch(
     "https://hyperlocal-backend-84rs.onrender.com/orders",
     {
         headers: {
@@ -21,7 +21,22 @@ async function loadOrders() {
         }
     }
 );
-    const orders = await response.json();
+
+const orders = await response.json();
+
+if (!response.ok) {
+    console.error("Orders request failed:", response.status, orders);
+    document.getElementById("orders").innerHTML =
+        "<p>Unable to load orders. Please check your login.</p>";
+    return;
+}
+
+if (!Array.isArray(orders)) {
+    console.error("Expected an orders array but received:", orders);
+    document.getElementById("orders").innerHTML =
+        "<p>The server returned an unexpected response.</p>";
+    return;
+}
 
     const container = document.getElementById("orders");
     let activeOrders = 0;
