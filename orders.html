@@ -329,7 +329,13 @@ const deliveryEmail = latestOrder.deliveryPartnerEmail;
 
 
 const locationResponse = await fetch(
-    "https://hyperlocal-backend-84rs.onrender.com/location/" + deliveryEmail
+    "https://hyperlocal-backend-84rs.onrender.com/location/" +
+        encodeURIComponent(deliveryEmail),
+    {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    }
 );
 
 const location = await locationResponse.json();
@@ -418,14 +424,19 @@ async function rateDeliveryBoy(id){
 
 }
 
-function openChat(email){
+function openChat(email) {
+    if (!email || !String(email).trim()) {
+        alert("Delivery partner email is unavailable.");
+        return;
+    }
 
-    localStorage.setItem("chatWith", email);
+    localStorage.setItem(
+        "deliveryEmail",
+        String(email).trim().toLowerCase()
+    );
 
-    window.location.href = "chat.html";
-
+    window.location.href = "customer-chat.html";
 }
-
 
 
 </script>

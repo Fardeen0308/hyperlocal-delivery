@@ -116,10 +116,13 @@ async function verifyOtp(id) {
 }
 
 function openCustomerChat(email) {
+    if (!email) {
+        alert("Customer email is unavailable.");
+        return;
+    }
 
-    localStorage.setItem("chatWith", email);
-
-    window.location.href = "chat.html";
+    localStorage.setItem("chatWith", email.trim().toLowerCase());
+    window.location.href = "customer-chat.html";
 }
 
 function sendLocation() {
@@ -201,7 +204,11 @@ async function toggleStatus() {
 
 function logout() {
     localStorage.removeItem("user");
-    window.location.href = "login.html";
+    localStorage.removeItem("token");
+    localStorage.removeItem("chatWith");
+    localStorage.removeItem("deliveryEmail");
+
+    window.location.replace("login.html");
 }
 
 loadOrders();
