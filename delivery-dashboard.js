@@ -228,6 +228,7 @@ function logout() {
 
 loadOrders();
 loadStats();
+loadDeliveryHistory();
 
 setInterval(() => {
     const activeElement = document.activeElement;
@@ -241,6 +242,7 @@ setInterval(() => {
     }
 
     loadStats();
+    loadDeliveryHistory();
     sendLocation();
 }, 5000);
 
@@ -257,4 +259,66 @@ window.open(
 encodeURIComponent(address)
 );
 
+}
+async function loadDeliveryHistory() {
+    const history = document.getElementById("history");
+    if (!history) return;
+
+    try {
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/orders",
+            {
+                headers: {
+                    "Authorization": "Bearer " +
+                        localStorage.getItem("token")
+                },
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            history.textContent =
+                "Unable to load delivery history.";
+            return;
+        }
+
+        const orders = await response.json();
+
+        if (!Array.isArray(orders)) {
+            history.textContent =
+                "Unexpected delivery history response.";
+            return;
+        }
+
+        const myEmail = String(deliveryuser.email || "")
+            .trim()
+            .toLowerCase();
+
+        const completedOrders = orders.filter(order =>
+            order.status === "Delivered" &&
+            String(order.deliveryPartnerEmail || "")
+                .trim()
+                .toLowerCase() === myEmail
+        );
+
+        if (completedOrders.length === 0) {
+            history.innerHTML =
+                "<p>No completed deliveries yet.</p>";
+            return;
+        }
+
+        history.innerHTML = completedOrders.map(order => `
+            <div class="history-item">
+                <h3>Order #${order.id}</h3>
+                <p>Customer: ${order.customerName || "Customer"}</p>
+                <p>Status: ✅ Delivered</p>
+                <p>Earnings: ₹${Number(order.earning || 0).toFixed(2)}</p>
+            </div>
+        `).join("");
+
+    } catch (error) {
+        console.error("Delivery history error:", error);
+        history.textContent =
+            "Unable to load delivery history.";
+    }
 }
