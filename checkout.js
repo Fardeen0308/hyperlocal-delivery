@@ -73,6 +73,7 @@ alert(data.message || "Order placed successfully!");
 
 localStorage.removeItem("cart");
 localStorage.removeItem("buyNowProduct");
+localStorage.removeItem("discount");
 
 window.location.href = "orders.html";
 }
