@@ -159,17 +159,16 @@ if(order.status=="Delivered"){
 </p>
 ` : ""}
 
-          ${order.deliveryPartnerName ? `
-<h3>🚚 Delivery Partner</h3>
+          ${order.deliveryPartnerEmail && order.status === "Out for Delivery" ? `
+    <h3>🚚 Delivery Partner</h3>
 
-<p>👤 ${order.deliveryPartnerName}</p>
+    <p>👤 ${order.deliveryPartnerName || "Assigned delivery partner"}</p>
 
-<p>📧 ${order.deliveryPartnerEmail}</p>
+    <p>📧 ${order.deliveryPartnerEmail}</p>
 
-<button onclick="openChat('${order.deliveryPartnerEmail}')">
-💬 Chat
-</button>
-
+    <button onclick="openChat('${order.deliveryPartnerEmail}')">
+        💬 Chat
+    </button>
 ` : ""}
           ${order.status == "Delivered" || order.status == "Cancelled"
 ? (
