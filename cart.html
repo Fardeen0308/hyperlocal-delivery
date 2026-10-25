@@ -82,8 +82,12 @@ document.getElementById("total").innerText =
 
 let gst = total * 0.05;
 
-let discount =
-Number(localStorage.getItem("discount")) || 0;
+let discount = Math.max(
+    0,
+    Number(localStorage.getItem("discount")) || 0
+);
+
+discount = Math.min(discount, total);
 
 let grandTotal =
 total + delivery + gst - discount;
@@ -99,6 +103,9 @@ document.getElementById("gst").innerHTML =
 
 document.getElementById("grandTotal").innerHTML =
 "Grand Total : ₹" + grandTotal.toFixed(2);
+
+document.getElementById("discount").innerText =
+    "Discount: ₹" + discount.toFixed(2);
     
 
 function removeItem(index) {
