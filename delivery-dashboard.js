@@ -230,7 +230,16 @@ loadOrders();
 loadStats();
 
 setInterval(() => {
-    loadOrders();
+    const activeElement = document.activeElement;
+    const isTypingOtp =
+        activeElement &&
+        activeElement.id &&
+        activeElement.id.startsWith("otp-");
+
+    if (!isTypingOtp) {
+        loadOrders();
+    }
+
     loadStats();
     sendLocation();
 }, 5000);
