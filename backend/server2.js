@@ -1662,23 +1662,35 @@ app.post(
 app.get(
     "/orders",
     authenticateToken,
-    requireRole("admin"),
+    requireRole("admin", "delivery"),
     async (req, res) => {
+        const { data, error } = await supabase
+            .from("orders")
+            .select("*")
+            .order("id", { ascending: false });
 
-    const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("id", { ascending: false });
+        if (error) {
+            return res.status(500).json({
+                message: error.message
+            });
+        }
 
-    if (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+        // Admins can see all orders.
+        // Delivery partners receive only their assigned orders.
+        if (req.user.role === "admin") {
+            return res.json(data);
+        }
+
+        const assignedOrders = data.filter(
+            order =>
+                order.deliveryPartnerEmail &&
+                order.deliveryPartnerEmail.toLowerCase() ===
+                    req.user.email.toLowerCase()
+        );
+
+        return res.json(assignedOrders);
     }
-
-    res.json(data);
-
-});
+);
 
 app.put(
     "/orders/:id",
