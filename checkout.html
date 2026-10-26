@@ -111,8 +111,9 @@ console.log("GRAND TOTAL:", grandTotal);
         },
 
         body: JSON.stringify({
-            products
-        })
+    products,
+    couponCode: localStorage.getItem("couponCode") || ""
+})
     }
 );
     const order = await response.json();
@@ -167,6 +168,7 @@ const orderResponse = await fetch(
             address,
             email: user.email,
             products,
+            couponCode: localStorage.getItem("couponCode") || "",
             subtotal: total,
             delivery,
             gst,
@@ -192,6 +194,7 @@ alert("Order placed successfully 🎉");
 
 localStorage.removeItem("cart");
 localStorage.removeItem("buyNowProduct");
+localStorage.removeItem("couponCode");
 localStorage.removeItem("discount");
 
 window.location.href = "orders.html";
@@ -223,6 +226,7 @@ window.location.href = "orders.html";
                 address,
                 email: user.email,
                 products,
+                couponCode: localStorage.getItem("couponCode") || "",
                 subtotal: total,
                 delivery,
                 gst,
@@ -236,12 +240,20 @@ window.location.href = "orders.html";
 
     const data = await response.json();
 
-    alert(data.message);
+if (!response.ok) {
+    alert(data.message || "Failed to place order");
+    console.error("Order creation error:", data);
+    return;
+}
 
-    localStorage.removeItem("cart");
+alert(data.message || "Order placed successfully!");
+
+localStorage.removeItem("cart");
 localStorage.removeItem("buyNowProduct");
+localStorage.removeItem("discount");
+localStorage.removeItem("couponCode");
 
-    window.location.href = "orders.html";
+window.location.href = "orders.html";
 }
 
 </script>

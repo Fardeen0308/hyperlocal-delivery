@@ -420,6 +420,7 @@ app.post(
     async (req, res) => {
         try {
             const products = req.body.products;
+            const couponCode = String(req.body.couponCode || "").trim();
 
             if (
                 !Array.isArray(products) ||
@@ -550,8 +551,18 @@ app.post(
             // Calculate totals using integer paise
             const deliveryPaise = 4000; // ₹40
             const gstPaise = Math.round(subtotalPaise * 0.05);
-            const discountPaise = 0;
+            const couponResult = await calculateCouponDiscount(
+    couponCode,
+    subtotalPaise
+);
 
+if (!couponResult.success) {
+    return res.status(400).json({
+        message: couponResult.message || "Invalid coupon"
+    });
+}
+
+const discountPaise = couponResult.discountPaise;
             const grandTotalPaise =
                 subtotalPaise +
                 deliveryPaise +
@@ -1288,8 +1299,22 @@ app.post(
 
             // 4. Calculate totals on the server
             const deliveryPaise = 4000;
-            const gstPaise = Math.round(subtotalPaise * 0.05);
-            const discountPaise = 0;
+const gstPaise = Math.round(subtotalPaise * 0.05);
+
+const couponCode = String(req.body.couponCode || "").trim();
+
+const couponResult = await calculateCouponDiscount(
+    couponCode,
+    subtotalPaise
+);
+
+if (!couponResult.success) {
+    return res.status(400).json({
+        message: couponResult.message || "Invalid coupon"
+    });
+}
+
+const discountPaise = couponResult.discountPaise;
 
             const grandTotalPaise =
                 subtotalPaise +
@@ -3085,55 +3110,202 @@ app.delete(
 
 });
 
-app.post("/validate-coupon", async (req, res) => {
+async function calculateCouponDiscount(code, subtotal) {
+    const couponCode = String(code || "").trim();
 
-    const { code, amount } = req.body;
+    if (!couponCode) {
+        return { success: true, discountPaise: 0 };
+    }
+
+    if (!Number.isSafeInteger(subtotal) || subtotal < 0) {
+        return { success: false, message: "Invalid subtotal" };
+    }
 
     const { data: coupon, error } = await supabase
         .from("coupons")
         .select("*")
-        .eq("code", code)
+        .eq("code", couponCode)
         .eq("active", true)
-        .single();
+        .maybeSingle();
 
-    if (error || !coupon) {
-        return res.json({
-            success: false,
-            message: "Invalid Coupon"
-        });
+    if (error) {
+        console.error("Coupon lookup failed:", error.message);
+        return { success: false, message: "Unable to validate coupon" };
     }
 
-    if (new Date(coupon.expiry) < new Date()) {
-        return res.json({
-            success: false,
-            message: "Coupon Expired"
-        });
+    if (!coupon) {
+        return { success: false, message: "Invalid coupon" };
     }
 
-    if (Number(amount) < Number(coupon.minOrder)) {
-        return res.json({
-            success: false,
-            message: `Minimum order ₹${coupon.minOrder}`
-        });
+    if (
+        !coupon.expiry ||
+        !Number.isFinite(Date.parse(coupon.expiry)) ||
+        Date.parse(coupon.expiry) < Date.now()
+    ) {
+        return { success: false, message: "Coupon expired or invalid" };
     }
 
-    let discountAmount = 0;
+    const amount = subtotal / 100;
+    const minOrder = Number(coupon.minOrder);
+    const discount = Number(coupon.discount);
+
+    if (
+        !Number.isFinite(minOrder) || minOrder < 0 ||
+        !Number.isFinite(discount) || discount < 0
+    ) {
+        return { success: false, message: "Invalid coupon configuration" };
+    }
+
+    if (amount < minOrder) {
+        return {
+            success: false,
+            message: `Minimum order ₹${minOrder}`
+        };
+    }
+
+    let discountRupees;
 
     if (coupon.type === "flat") {
-        discountAmount = Number(coupon.discount);
+        discountRupees = discount;
+    } else if (["percentage", "percent", "other"].includes(
+    String(coupon.type).trim().toLowerCase()
+)) {
+        if (discount > 100) {
+            return { success: false, message: "Invalid coupon percentage" };
+        }
+
+        discountRupees = amount * discount / 100;
     } else {
-        discountAmount =
-            Number(amount) * Number(coupon.discount) / 100;
+        return {
+            success: false,
+            message: `Unsupported coupon type: ${coupon.type}`
+        };
     }
 
-    res.json({
-        success: true,
-        discount: discountAmount
-    });
+    const discountPaise = Math.min(
+        Math.round(discountRupees * 100),
+        subtotal
+    );
 
+    return { success: true, discountPaise };
+}
+
+app.post("/validate-coupon", async (req, res) => {
+    try {
+        const code = String(req.body.code || "").trim();
+
+        const amount = Number(req.body.amount);
+
+        if (
+            !code ||
+            !Number.isFinite(amount) ||
+            amount < 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid coupon details"
+            });
+        }
+
+        const { data: coupon, error } = await supabase
+            .from("coupons")
+            .select("*")
+            .eq("code", code)
+            .eq("active", true)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Coupon lookup failed:", error.message);
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to validate coupon"
+            });
+        }
+
+        if (!coupon) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid coupon"
+            });
+        }
+
+        if (
+            !coupon.expiry ||
+            !Number.isFinite(Date.parse(coupon.expiry)) ||
+            Date.parse(coupon.expiry) < Date.now()
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Coupon expired or invalid"
+            });
+        }
+
+        const minOrder = Number(coupon.minOrder);
+        const couponDiscount = Number(coupon.discount);
+
+        if (
+            !Number.isFinite(minOrder) ||
+            minOrder < 0 ||
+            !Number.isFinite(couponDiscount) ||
+            couponDiscount < 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid coupon configuration"
+            });
+        }
+
+        if (amount < minOrder) {
+            return res.status(400).json({
+                success: false,
+                message: `Minimum order ₹${minOrder}`
+            });
+        }
+
+        let discountAmount = 0;
+
+        if (coupon.type === "flat") {
+            discountAmount = couponDiscount;
+        } else if (
+    ["percentage", "percent", "other"].includes(
+        String(coupon.type).trim().toLowerCase()
+    )
+) {
+            if (couponDiscount > 100) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid coupon percentage"
+                });
+            }
+
+            discountAmount = amount * couponDiscount / 100;
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Unsupported coupon type"
+            });
+        }
+
+        discountAmount = Math.min(
+            Math.round(discountAmount * 100) / 100,
+            amount
+        );
+
+        return res.json({
+            success: true,
+            discount: discountAmount
+        });
+
+    } catch (error) {
+        console.error("Coupon validation failed:", error.message);
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to validate coupon"
+        });
+    }
 });
-
-
 app.get(
     "/users",
     authenticateToken,

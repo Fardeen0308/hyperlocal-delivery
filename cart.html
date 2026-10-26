@@ -175,6 +175,7 @@ async function applyCoupon() {
 );
 
     localStorage.setItem("discount", discount);
+    localStorage.setItem("couponCode", code.trim());
 
     document.getElementById("discount").innerText =
         "Discount: ₹" + discount;
