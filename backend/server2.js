@@ -1434,10 +1434,12 @@ const discountPaise = couponResult.discountPaise;
             });
 
             if (orderError) {
-                console.error(
-                    "Atomic order creation failed:",
-                    orderError.message
-                );
+    console.error("Atomic order creation failed:", {
+        message: orderError.message,
+        code: orderError.code,
+        details: orderError.details,
+        hint: orderError.hint
+    });
 
                 if (
                     orderError.message?.includes(
