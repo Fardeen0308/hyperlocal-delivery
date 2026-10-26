@@ -1125,6 +1125,7 @@ return res.json({
     });
 
 });
+console.log("Backend current time:", new Date().toISOString());
 app.post(
     "/orders",
     authenticateToken,
