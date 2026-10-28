@@ -1429,7 +1429,7 @@ const discountPaise = couponResult.discountPaise;
                 p_razorpay_payment_id: paymentVerified
                     ? razorpay_payment_id
                     : null,
-                p_delivery_Otp: deliveryOtp,
+                p_delivery_otp: deliveryOtp,
                 p_payment_verified: paymentVerified
             });
 
