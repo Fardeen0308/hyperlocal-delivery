@@ -1,4 +1,5 @@
 require("dotenv").config();
+const { Resend } = require("resend");
 const crypto = require("crypto");
 const sendNotification = require("./notificationService");
 const bcrypt = require("bcrypt");
@@ -15,30 +16,29 @@ const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-const emailTransporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD
-    }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.get("/test-email", async (req, res) => {
     try {
-        await emailTransporter.sendMail({
-            from: process.env.EMAIL_FROM,
+        const { data, error } = await resend.emails.send({
+            from: "HyperLocal <onboarding@resend.dev>",,
             to: process.env.EMAIL_USER,
             subject: "HyperLocal Email Test",
-            text: "Buddy, your HyperLocal email setup is working!"
+            text: "Your HyperLocal email setup is working!"
         });
 
-        res.send("Email sent successfully!");
+        if (error) {
+            console.error("Resend email error:", error);
+            return res.status(500).send("Email sending failed. Check backend logs.");
+        }
+
+        console.log("Test email accepted by Resend:", data?.id);
+        return res.send("Email accepted by Resend successfully!");
     } catch (error) {
-        console.error("Email test failed:", error.message);
-        res.status(500).send("Email test failed. Check backend logs.");
+        console.error("Resend test failed:", error.message);
+        return res.status(500).send("Email test failed. Check backend logs.");
     }
 });
-
 app.use(cors());
 app.use(express.json());
 
