@@ -21,7 +21,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 app.get("/test-email", async (req, res) => {
     try {
         const { data, error } = await resend.emails.send({
-            from: "HyperLocal <onboarding@resend.dev>",,
+            from: "HyperLocal <onboarding@resend.dev>",
             to: process.env.EMAIL_USER,
             subject: "HyperLocal Email Test",
             text: "Your HyperLocal email setup is working!"
