@@ -1,24 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
-   <link rel="stylesheet" href="css/auth.css">
-<link rel="stylesheet" href="css/responsive.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - HyperLocal</title>
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
 
 <div class="form-box">
     <h2>Login</h2>
 
-    <input type="email" id="email" placeholder="Email">
+    <input
+        type="email"
+        id="email"
+        placeholder="Email"
+        autocomplete="email"
+        required
+    >
 
-    <input type="password" id="password" placeholder="Password">
+    <input
+        type="password"
+        id="password"
+        placeholder="Password"
+        autocomplete="current-password"
+        required
+    >
+
     <label>
-    <input type="checkbox" onclick="togglePassword()">
-    Show Password
-</label>
+        <input type="checkbox" onclick="togglePassword()">
+        Show Password
+    </label>
 
-    <button onclick="login()">Login</button>
+    <p style="text-align: right;">
+        <a href="forgot-password.html">Forgot Password?</a>
+    </p>
+
+    <button type="button" onclick="login()">Login</button>
 
     <p>
         New User?
