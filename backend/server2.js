@@ -6,7 +6,7 @@ const razorpay = require("./razorpay");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const fs = require("fs");
-
+const nodemailer = require("nodemailer");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const { authenticateToken, requireRole } = require("./authMiddleware");
@@ -15,6 +15,29 @@ const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
+const emailTransporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_APP_PASSWORD
+    }
+});
+
+app.get("/test-email", async (req, res) => {
+    try {
+        await emailTransporter.sendMail({
+            from: process.env.EMAIL_FROM,
+            to: process.env.EMAIL_USER,
+            subject: "HyperLocal Email Test",
+            text: "Buddy, your HyperLocal email setup is working!"
+        });
+
+        res.send("Email sent successfully!");
+    } catch (error) {
+        console.error("Email test failed:", error.message);
+        res.status(500).send("Email test failed. Check backend logs.");
+    }
+});
 
 app.use(cors());
 app.use(express.json());
