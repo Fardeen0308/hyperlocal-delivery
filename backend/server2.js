@@ -1115,9 +1115,29 @@ const { data: admin } = await supabase
 
 if (admin) {
 
-    // Temporary plain-text password check
-    if (password === admin.password) {
+   const isAdminPasswordMatch =
+    admin.password.startsWith("$2")
+        ? await bcrypt.compare(password, admin.password)
+        : password === admin.password;
 
+if (isAdminPasswordMatch) {
+
+    // Upgrade an old plain-text password to bcrypt
+    if (!admin.password.startsWith("$2")) {
+        const hashedAdminPassword = await bcrypt.hash(password, 12);
+
+        const { error: passwordUpdateError } = await supabase
+            .from("admins")
+            .update({ password: hashedAdminPassword })
+            .eq("id", admin.id);
+
+        if (passwordUpdateError) {
+            console.error("Admin password upgrade failed:", passwordUpdateError);
+            return res.status(500).json({
+                message: "Unable to complete login."
+            });
+        }
+    }
         const { password, ...safeAdmin } = admin;
 
 const token = jwt.sign(
@@ -1149,6 +1169,7 @@ return res.json({
 
 });
 console.log("Backend current time:", new Date().toISOString());
+
 app.post(
     "/orders",
     authenticateToken,
@@ -3954,6 +3975,255 @@ app.post(
         }
     }
 );
+app.post("/forgot-password", async (req, res) => {
+    try {
+        const email = String(req.body.email || "")
+            .trim()
+            .toLowerCase();
+
+        if (!email) {
+            return res.status(400).json({
+                message: "Please enter your email."
+            });
+        }
+        // Temporary Resend testing restriction
+if (
+    !process.env.EMAIL_USER ||
+    email !== process.env.EMAIL_USER.trim().toLowerCase()
+) {
+    return res.json({
+        message: "If an account exists, password reset instructions will be sent."
+    });
+}
+
+        // Find the account in the correct table
+        let account = null;
+        let accountType = null;
+
+        const { data: user, error: userError } = await supabase
+            .from("users")
+            .select("id, email")
+            .eq("email", email)
+            .maybeSingle();
+
+        if (userError) throw userError;
+
+        if (user) {
+            account = user;
+            accountType = "users";
+        } else {
+            const { data: partner, error: partnerError } =
+                await supabase
+                    .from("deliveryPartners")
+                    .select("id, email")
+                    .eq("email", email)
+                    .maybeSingle();
+
+            if (partnerError) throw partnerError;
+
+            if (partner) {
+                account = partner;
+                accountType = "deliveryPartners";
+            } else {
+                const { data: admin, error: adminError } =
+                    await supabase
+                        .from("admins")
+                        .select("id, email")
+                        .eq("email", email)
+                        .maybeSingle();
+
+                if (adminError) throw adminError;
+
+                if (admin) {
+                    account = admin;
+                    accountType = "admins";
+                }
+            }
+        }
+
+        // Always return the same message to protect account privacy
+        const genericMessage =
+            "If an account exists, password reset instructions will be sent.";
+
+        if (!account) {
+            return res.json({ message: genericMessage });
+        }
+
+        // Generate a secure random token
+        const resetToken = crypto.randomBytes(32).toString("hex");
+
+        const tokenHash = crypto
+            .createHash("sha256")
+            .update(resetToken)
+            .digest("hex");
+
+        // Expire old unused reset links for this account
+        const { error: deleteError } = await supabase
+            .from("password_resets")
+            .delete()
+            .eq("email", email)
+            .eq("account_type", accountType);
+
+        if (deleteError) throw deleteError;
+
+        // Save only the hashed token
+        const { error: insertError } = await supabase
+            .from("password_resets")
+            .insert({
+                email: email,
+                token_hash: tokenHash,
+                account_type: accountType,
+                expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString()
+            });
+
+        if (insertError) throw insertError;
+
+        const resetLink =
+            "https://hyperlocal-delivery.vercel.app/reset-password.html?token=" +
+            resetToken;
+
+        const { error: emailError } = await resend.emails.send({
+            from: "HyperLocal <onboarding@resend.dev>",
+             to: process.env.EMAIL_USER,
+            subject: "HyperLocal Password Reset",
+            html: `
+                <h2>Reset your HyperLocal password</h2>
+                <p>Click below to choose a new password.</p>
+                <p><a href="${resetLink}">Reset Password</a></p>
+                <p>This link expires in 15 minutes.</p>
+                <p>If you did not request this, ignore this email.</p>
+            `
+        });
+
+        if (emailError) {
+            console.error("Reset email error:", emailError);
+            return res.status(500).json({
+                message: "Unable to send reset email right now."
+            });
+        }
+
+        return res.json({ message: genericMessage });
+
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        return res.status(500).json({
+            message: "Something went wrong. Please try again."
+        });
+    }
+});
+
+app.post("/reset-password", async (req, res) => {
+    try {
+        const { token, password } = req.body;
+
+        if (
+            typeof token !== "string" ||
+            !/^[a-f0-9]{64}$/i.test(token) ||
+            typeof password !== "string" ||
+            password.length < 8 ||
+            Buffer.byteLength(password, "utf8") > 72
+        ) {
+            return res.status(400).json({
+                message: "Enter a valid reset token and password (8–72 characters)."
+            });
+        }
+
+        const tokenHash = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        // Find valid reset token
+        const { data: reset, error: findError } = await supabase
+            .from("password_resets")
+            .select("*")
+            .eq("token_hash", tokenHash)
+            .eq("used", false)
+            .gt("expires_at", new Date().toISOString())
+            .maybeSingle();
+
+        if (findError) throw findError;
+
+        if (!reset) {
+            return res.status(400).json({
+                message: "Reset link is invalid or expired. Request a new link."
+            });
+        }
+
+        // Only allow the three approved account tables
+        const allowedTables = [
+            "users",
+            "deliveryPartners",
+            "admins"
+        ];
+
+        if (!allowedTables.includes(reset.account_type)) {
+            return res.status(400).json({
+                message: "Invalid reset request."
+            });
+        }
+
+        // Claim the token first to prevent concurrent reuse
+        const { data: claimedToken, error: claimError } = await supabase
+            .from("password_resets")
+            .update({ used: true })
+            .eq("id", reset.id)
+            .eq("used", false)
+            .gt("expires_at", new Date().toISOString())
+            .select("id")
+            .maybeSingle();
+
+        if (claimError) throw claimError;
+
+        if (!claimedToken) {
+            return res.status(400).json({
+                message: "This reset link has already been used or expired."
+            });
+        }
+
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Update the correct account
+        const { data: updatedAccount, error: updateError } = await supabase
+            .from(reset.account_type)
+            .update({ password: hashedPassword })
+            .eq("email", reset.email)
+            .select("id")
+            .maybeSingle();
+
+        if (updateError) throw updateError;
+
+        if (!updatedAccount) {
+            console.error("Password reset account not found.");
+            return res.status(400).json({
+                message: "Unable to find the account. Request a new reset link."
+            });
+        }
+
+        // Delete other reset requests for this account
+        const { error: cleanupError } = await supabase
+            .from("password_resets")
+            .delete()
+            .eq("email", reset.email)
+            .eq("account_type", reset.account_type);
+
+        if (cleanupError) {
+            console.error("Reset cleanup error:", cleanupError);
+        }
+
+        return res.json({
+            message: "Password updated successfully. You can now log in."
+        });
+
+    } catch (error) {
+        console.error("Reset password error:", error);
+
+        return res.status(500).json({
+            message: "Unable to reset password. Please try again."
+        });
+    }
+});
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
