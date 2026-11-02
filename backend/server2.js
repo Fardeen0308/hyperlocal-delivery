@@ -85,6 +85,26 @@ app.post(
         try {
             const name = String(req.body.name || "").trim();
             const image = String(req.body.image || "").trim();
+            const images = Array.isArray(req.body.images)
+    ? req.body.images
+    : [];
+
+if (images.length > 5) {
+    return res.status(400).json({
+        message: "Maximum 5 product images allowed"
+    });
+}
+
+if (images.some(url =>
+    typeof url !== "string" || !url.startsWith("https://")
+)) {
+    return res.status(400).json({
+        message: "Invalid product image URL"
+    });
+}
+
+const finalImages = images.length > 0 ? images : [image];
+const mainImage = finalImages[0];
             const category = String(req.body.category || "").trim();
             const price = Number(req.body.price);
             const stock =
@@ -98,7 +118,7 @@ app.post(
                 });
             }
 
-            if (!image || !image.startsWith("https://")) {
+            if (!mainImage || !mainImage.startsWith("https://")) {
                 return res.status(400).json({
                     message: "A valid HTTPS product image URL is required"
                 });
@@ -147,7 +167,8 @@ app.post(
                 .insert([{
                     name,
                     price,
-                    image,
+                    image: mainImage,
+                    images: finalImages,
                     category,
                     stock,
                     sold: 0,
@@ -185,6 +206,7 @@ app.get("/products", async (req, res) => {
                 name,
                 price,
                 image,
+                images,
                 category,
                 stock,
                 sold,
@@ -430,6 +452,74 @@ app.post(
                         "Temporary file cleanup failed:",
                         cleanupError.message
                     );
+                }
+            }
+        }
+    }
+);
+
+app.post(
+    "/upload-multiple",
+    authenticateToken,
+    requireRole("admin", "store_owner"),
+    upload.array("images", 5),
+    async (req, res) => {
+        const uploadedFiles = req.files || [];
+
+        try {
+            if (uploadedFiles.length === 0) {
+                return res.status(400).json({
+                    message: "Please select at least one image"
+                });
+            }
+
+            // Validate all files before uploading
+            const invalidFile = uploadedFiles.find(
+                file => !file.mimetype.startsWith("image/")
+            );
+
+            if (invalidFile) {
+                return res.status(400).json({
+                    message: "Only image files are allowed"
+                });
+            }
+
+            const imageUrls = [];
+
+            for (const file of uploadedFiles) {
+                const result = await cloudinary.uploader.upload(
+                    file.path,
+                    {
+                        resource_type: "image"
+                    }
+                );
+
+                imageUrls.push(result.secure_url);
+            }
+
+            return res.json({
+                message: "Images Uploaded Successfully",
+                images: imageUrls
+            });
+
+        } catch (error) {
+            console.error("Multiple image upload error:", error);
+
+            return res.status(500).json({
+                message: "Unable to upload images"
+            });
+
+        } finally {
+            for (const file of uploadedFiles) {
+                if (file.path && fs.existsSync(file.path)) {
+                    try {
+                        fs.unlinkSync(file.path);
+                    } catch (cleanupError) {
+                        console.error(
+                            "Temporary file cleanup failed:",
+                            cleanupError.message
+                        );
+                    }
                 }
             }
         }
