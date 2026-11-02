@@ -193,7 +193,7 @@ async function loadProducts() {
                 ${product.sold >= 10 ? "🔥 Best Seller" : "20% OFF"}
             </div>
 
-            <img src="${product.image}" alt="${product.name}">
+            ${createProductSlider(product)}
 
             <div class="card-body">
 
@@ -287,7 +287,7 @@ function filterCategory(category) {
                 ${product.sold >= 10 ? "🔥 Best Seller" : "20% OFF"}
             </div>
 
-            <img src="${product.image}" alt="${product.name}">
+           ${createProductSlider(product)}
 
             <div class="card-body">
 
@@ -404,8 +404,7 @@ async function loadBestProducts(){
         container.innerHTML += `
         <div class="card">
 
-            <img src="${product.image}" width="180">
-
+           ${createProductSlider(product)}
             <h2>${product.name}</h2>
 
             <p>🔥 Sold: ${product.sold}</p>
@@ -418,6 +417,116 @@ async function loadBestProducts(){
 
     });
 
+}
+function createProductSlider(product) {
+
+    const images =
+        product.images && product.images.length
+        ? product.images
+        : [product.image];
+
+    const safeImages = images.filter(Boolean);
+
+    return `
+        <div class="product-image-slider"
+             onclick="event.stopPropagation()"
+             ontouchstart="startProductSwipe(event)"
+ontouchend="endProductSwipe(event, this)"
+onmousedown="startProductSwipe(event)"
+onmouseup="endProductSwipe(event, this)">
+
+            <img
+                src="${safeImages[0] || ''}"
+                alt="${product.name}"
+                class="product-main-image"
+                data-images='${JSON.stringify(safeImages)}'
+                data-index="0"
+            >
+
+            ${
+                safeImages.length > 1
+                ? `
+                <div class="product-image-dots">
+                    ${safeImages.map((img, index) => `
+                        <span class="${index === 0 ? "active" : ""}"></span>
+                    `).join("")}
+                </div>
+                `
+                : ""
+            }
+
+        </div>
+    `;
+}
+
+function startProductSwipe(event) {
+    const point = event.touches
+        ? event.touches[0].clientX
+        : event.clientX;
+
+    event.currentTarget.dataset.startX = point;
+}
+
+function endProductSwipe(event, slider) {
+
+    const point = event.changedTouches
+        ? event.changedTouches[0].clientX
+        : event.clientX;
+
+    const startX = Number(slider.dataset.startX);
+    const difference = point - startX;
+
+    if (Math.abs(difference) < 35) return;
+
+    const image = slider.querySelector(".product-main-image");
+    const images = JSON.parse(image.dataset.images);
+
+    let index = Number(image.dataset.index);
+
+    index = difference < 0 ? index + 1 : index - 1;
+
+    if (index < 0) index = images.length - 1;
+    if (index >= images.length) index = 0;
+
+    image.src = images[index];
+    image.dataset.index = index;
+
+    slider.querySelectorAll(".product-image-dots span")
+        .forEach((dot, i) => {
+            dot.classList.toggle("active", i === index);
+        });
+}
+
+    const startX = Number(slider.dataset.startX);
+    const endX = event.changedTouches[0].clientX;
+
+    const difference = endX - startX;
+
+    if (Math.abs(difference) < 35) return;
+
+    const image = slider.querySelector(".product-main-image");
+
+    const images = JSON.parse(image.dataset.images);
+
+    let index = Number(image.dataset.index);
+
+    if (difference < 0) {
+        index++;
+    } else {
+        index--;
+    }
+
+    if (index < 0) index = images.length - 1;
+    if (index >= images.length) index = 0;
+
+    image.src = images[index];
+    image.dataset.index = index;
+
+    const dots = slider.querySelectorAll(".product-image-dots span");
+
+    dots.forEach((dot, i) => {
+        dot.classList.toggle("active", i === index);
+    });
 }
 loadBestProducts();
 loadProducts();

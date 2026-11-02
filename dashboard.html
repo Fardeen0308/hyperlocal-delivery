@@ -81,12 +81,19 @@ placeholder="Stock Quantity">
 
 </select>
 
-<input type="file" id="productImage">
+<label for="productImages">Select Product Images (Maximum 5)</label>
 
-<img id="preview" width="150">
+<input
+    type="file"
+    id="productImages"
+    accept="image/jpeg,image/png,image/webp"
+    multiple
+>
 
-<button onclick="uploadImage()">
-Upload Image
+<div id="imagePreviews"></div>
+
+<button type="button" onclick="uploadImages()">
+    Upload Images
 </button>
 
 <button onclick="addProduct()">
@@ -105,98 +112,7 @@ requireRole(["admin", "store_owner"]);
 </script>
 
 <script src="dashboard.js"></script>
-<script>
 
-    
-document.getElementById("productImage")
-.addEventListener("change", function(event){
-
-    let file = event.target.files[0];
-
-    if(file){
-
-        let reader = new FileReader();
-
-        reader.onload = function(e){
-
-            document.getElementById("preview")
-            .src = e.target.result;
-
-        };
-
-        reader.readAsDataURL(file);
-    }
-
-});
-</script>
-<script>
-    
-
-            
-
-   async function uploadImage() {
-
-    const fileInput =
-    document.getElementById("productImage");
-
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert("Please choose an image");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append("image", file);
-
-    try {
-
-        const token = localStorage.getItem("token");
-
-if (!token) {
-    alert("Please log in again");
-    return;
-}
-
-const response = await fetch(
-    "https://hyperlocal-backend-84rs.onrender.com/upload",
-    {
-        method: "POST",
-        headers: {
-            "Authorization": "Bearer " + token
-        },
-        body: formData
-    }
-);
-
-        const data = await response.json();
-
-        console.log(data);
-
-        if (data.imageUrl) {
-
-            localStorage.setItem(
-                "imageUrl",
-                data.imageUrl
-            );
-
-            alert("Image uploaded successfully");
-
-        } else {
-
-            alert(
-                "Server did not return image URL"
-            );
-        }
-
-    } catch (error) {
-
-        console.log(error);
-
-        alert("Upload Failed");
-    }
-}
-</script>
 
 </body>
 </html>

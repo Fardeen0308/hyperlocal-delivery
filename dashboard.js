@@ -3,46 +3,115 @@ const token = localStorage.getItem("token");
 const authHeaders = {
     "Authorization": "Bearer " + token
 };
-let imageUrl = "";
+
+let uploadedImageUrls = [];
+
+async function uploadImages() {
+    const fileInput = document.getElementById("productImages");
+    const files = Array.from(fileInput.files);
+
+    if (files.length === 0) {
+        alert("Please select images first");
+        return;
+    }
+
+    if (files.length > 5) {
+        alert("Maximum 5 images allowed");
+        return;
+    }
+
+    const formData = new FormData();
+
+    files.forEach(file => {
+        formData.append("images", file);
+    });
+
+    try {
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/upload-multiple",
+            {
+                method: "POST",
+                headers: authHeaders,
+                body: formData
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Image upload failed");
+            return;
+        }
+
+        uploadedImageUrls = data.images || [];
+
+        const preview = document.getElementById("imagePreviews");
+
+        preview.innerHTML = uploadedImageUrls.map(url => `
+            <img
+                src="${url}"
+                width="100"
+                style="margin:5px; border-radius:8px;"
+            >
+        `).join("");
+
+        alert("All images uploaded successfully!");
+
+    } catch (error) {
+        console.error("Multiple image upload error:", error);
+        alert("Unable to upload images");
+    }
+}
 
 // Add Product
 async function addProduct() {
 
-    const name = document.getElementById("productName").value;
+    const name = document.getElementById("productName").value.trim();
     const price = document.getElementById("productPrice").value;
     const category = document.getElementById("productCategory").value;
-    const stock =
-document.getElementById("productStock").value;
+    const stock = document.getElementById("productStock").value;
 
-    const imageUrl = localStorage.getItem("imageUrl");
-
-    if (!imageUrl) {
-        alert("Upload image first");
+    if (uploadedImageUrls.length === 0) {
+        alert("Please upload product images first");
         return;
     }
 
-    const response = await fetch("https://hyperlocal-backend-84rs.onrender.com/products", {
-        method: "POST",
-        headers: {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer " + token
-},
-        body: JSON.stringify({
-            name,
-            price,
-            image: imageUrl,
-            category,
-            stock,
-        })
-    });
+    const response = await fetch(
+        "https://hyperlocal-backend-84rs.onrender.com/products",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...authHeaders
+            },
+            body: JSON.stringify({
+                name,
+                price,
+                category,
+                stock,
+                image: uploadedImageUrls[0],
+                images: uploadedImageUrls
+            })
+        }
+    );
 
     const data = await response.json();
 
     alert(data.message);
 
-    loadProducts();
-}
+    if (response.ok) {
+        document.getElementById("productName").value = "";
+        document.getElementById("productPrice").value = "";
+        document.getElementById("productStock").value = "";
+        document.getElementById("productImages").value = "";
+        document.getElementById("imagePreviews").innerHTML = "";
 
+        uploadedImageUrls = [];
+
+        loadProducts();
+        loadStats();
+    }
+}
 // Load Products
 // Load Store Products
 async function loadProducts() {
@@ -65,7 +134,15 @@ async function loadProducts() {
         container.innerHTML += `
         <div class="card">
 
-            <img src="${product.image}" width="150">
+            <div class="product-images">
+    ${(product.images && product.images.length
+        ? product.images
+        : [product.image]
+    ).map(url => `
+        <img src="${url}" width="100"
+             style="margin:4px; border-radius:8px;">
+    `).join("")}
+</div>
 
             <h3>${product.name}</h3>
 
