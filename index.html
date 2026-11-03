@@ -146,23 +146,32 @@ function addToWishlist(name, price, image) {
     alert("Added To Wishlist ❤️");
 
 }
+function openProduct(id, name, price, image, category) {
 
-function openProduct(id, name, price, image, category){
+    const fullProduct = allProducts.find(
+        p => String(p.id) === String(id)
+    );
+
+    const images = fullProduct?.images?.length
+        ? fullProduct.images
+        : [image];
 
     localStorage.setItem(
         "selectedProduct",
         JSON.stringify({
-            id: id,
+            id,
             name,
             price,
             image,
+            images,
             category
         })
     );
 
     window.location.href = "product.html";
-
 }
+
+
 let allProducts = [];
 
 async function loadProducts() {

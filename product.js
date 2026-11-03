@@ -1,15 +1,45 @@
-let product =
-JSON.parse(localStorage.getItem("selectedProduct"));
+let product = JSON.parse(
+    localStorage.getItem("selectedProduct")
+);
 
-let container =
-document.getElementById("productDetails");
+let container = document.getElementById("productDetails");
+
+let productImages = product.images?.length
+    ? product.images
+    : [product.image];
+
+let currentImageIndex = 0;
 
 container.innerHTML = `
 <div class="card">
 
-    <img src="${product.image}"
-         width="250"
-         height="250">
+    <div class="detail-image-slider">
+
+        <button type="button" onclick="changeProductImage(-1)">
+            ❮
+        </button>
+
+        <img
+            id="detailProductImage"
+            src="${productImages[0]}"
+            width="250"
+            height="250"
+        >
+
+        <button type="button" onclick="changeProductImage(1)">
+            ❯
+        </button>
+
+    </div>
+
+    <div id="detailImageDots">
+        ${productImages.map((img, index) => `
+            <span
+                onclick="showProductImage(${index})"
+                style="cursor:pointer; margin:5px;"
+            >${index === 0 ? "●" : "○"}</span>
+        `).join("")}
+    </div>
 
     <h2>${product.name}</h2>
 
@@ -19,6 +49,34 @@ container.innerHTML = `
 
 </div>
 `;
+
+function showProductImage(index) {
+
+    currentImageIndex = index;
+
+    document.getElementById("detailProductImage").src =
+        productImages[currentImageIndex];
+
+    document.querySelectorAll("#detailImageDots span")
+        .forEach((dot, i) => {
+            dot.innerText = i === currentImageIndex ? "●" : "○";
+        });
+}
+
+function changeProductImage(direction) {
+
+    currentImageIndex += direction;
+
+    if (currentImageIndex < 0) {
+        currentImageIndex = productImages.length - 1;
+    }
+
+    if (currentImageIndex >= productImages.length) {
+        currentImageIndex = 0;
+    }
+
+    showProductImage(currentImageIndex);
+}
 
 async function addReview() {
     try {
