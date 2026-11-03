@@ -497,36 +497,6 @@ function endProductSwipe(event, slider) {
         });
 }
 
-    const startX = Number(slider.dataset.startX);
-    const endX = event.changedTouches[0].clientX;
-
-    const difference = endX - startX;
-
-    if (Math.abs(difference) < 35) return;
-
-    const image = slider.querySelector(".product-main-image");
-
-    const images = JSON.parse(image.dataset.images);
-
-    let index = Number(image.dataset.index);
-
-    if (difference < 0) {
-        index++;
-    } else {
-        index--;
-    }
-
-    if (index < 0) index = images.length - 1;
-    if (index >= images.length) index = 0;
-
-    image.src = images[index];
-    image.dataset.index = index;
-
-    const dots = slider.querySelectorAll(".product-image-dots span");
-
-    dots.forEach((dot, i) => {
-        dot.classList.toggle("active", i === index);
-    });
 loadBestProducts();
 loadProducts();
 function searchProducts() {
