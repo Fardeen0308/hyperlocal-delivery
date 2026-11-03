@@ -9,6 +9,7 @@ let uploadedImageUrls = [];
 async function uploadImages() {
     const fileInput = document.getElementById("productImages");
     const files = Array.from(fileInput.files);
+    console.log("Selected files:", files.length);
 
     if (files.length === 0) {
         alert("Please select images first");
@@ -44,6 +45,8 @@ async function uploadImages() {
         }
 
         uploadedImageUrls = data.images || [];
+        console.log("Uploaded image URLs:", uploadedImageUrls);
+console.log("Uploaded image count:", uploadedImageUrls.length);
 
         const preview = document.getElementById("imagePreviews");
 
