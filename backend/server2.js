@@ -111,6 +111,7 @@ const mainImage = finalImages[0];
                 req.body.stock === undefined || req.body.stock === ""
                     ? 10
                     : Number(req.body.stock);
+                    const is_returnable = req.body.is_returnable === true;
 
             if (!name || name.length > 150) {
                 return res.status(400).json({
@@ -172,7 +173,8 @@ const mainImage = finalImages[0];
                     category,
                     stock,
                     sold: 0,
-                    store_id: store.id
+                    store_id: store.id,
+                    is_returnable
                 }])
                 .select();
 
@@ -211,6 +213,7 @@ app.get("/products", async (req, res) => {
                 stock,
                 sold,
                 store_id,
+                is_returnable,
                 stores (
                     store_name
                 )
@@ -314,70 +317,113 @@ app.put(
     requireRole("admin", "store_owner"),
     async (req, res) => {
         try {
-            const name = String(req.body.name || "").trim();
-            const category = String(req.body.category || "").trim();
-            const price = Number(req.body.price);
-            const stock = Number(req.body.stock);
+            const updates = {};
 
-            if (!name || name.length > 150) {
+            // Validate and collect only the fields supplied
+            if (req.body.name !== undefined) {
+                const name = String(req.body.name).trim();
+
+                if (!name || name.length > 150) {
+                    return res.status(400).json({
+                        message: "Product name is required (maximum 150 characters)"
+                    });
+                }
+
+                updates.name = name;
+            }
+
+            if (req.body.category !== undefined) {
+                const category = String(req.body.category).trim();
+
+                if (!category || category.length > 100) {
+                    return res.status(400).json({
+                        message: "Product category is required (maximum 100 characters)"
+                    });
+                }
+
+                updates.category = category;
+            }
+
+            if (req.body.price !== undefined) {
+                const price = Number(req.body.price);
+
+                if (!Number.isFinite(price) || price <= 0) {
+                    return res.status(400).json({
+                        message: "Price must be greater than zero"
+                    });
+                }
+
+                updates.price = price;
+            }
+
+            if (req.body.stock !== undefined) {
+                const stock = Number(req.body.stock);
+
+                if (!Number.isInteger(stock) || stock < 0) {
+                    return res.status(400).json({
+                        message: "Stock must be a non-negative whole number"
+                    });
+                }
+
+                updates.stock = stock;
+            }
+
+            if (req.body.is_returnable !== undefined) {
+                if (typeof req.body.is_returnable !== "boolean") {
+                    return res.status(400).json({
+                        message: "Return eligibility must be true or false"
+                    });
+                }
+
+                updates.is_returnable = req.body.is_returnable;
+            }
+
+            if (Object.keys(updates).length === 0) {
                 return res.status(400).json({
-                    message: "Product name is required (maximum 150 characters)"
+                    message: "No valid product changes provided"
                 });
             }
 
-            if (!category || category.length > 100) {
-                return res.status(400).json({
-                    message: "Product category is required (maximum 100 characters)"
-                });
-            }
-
-            if (!Number.isFinite(price) || price <= 0) {
-                return res.status(400).json({
-                    message: "Price must be greater than zero"
-                });
-            }
-
-            if (!Number.isInteger(stock) || stock < 0) {
-                return res.status(400).json({
-                    message: "Stock must be a non-negative whole number"
-                });
-            }
-
-            // Find the store belonging to the logged-in account
-            const { data: store, error: storeError } = await supabase
-                .from("stores")
-                .select("id")
-                .eq("owner_id", req.user.id)
-                .maybeSingle();
-
-            if (storeError) {
-                console.error("Store lookup failed:", storeError.message);
-                return res.status(500).json({
-                    message: "Unable to verify store ownership"
-                });
-            }
-
-            if (!store) {
-                return res.status(404).json({
-                    message: "No store is assigned to this account"
-                });
-            }
-
-            // Update only a product belonging to this store
-            const { data, error } = await supabase
+            let query = supabase
                 .from("products")
-                .update({
-                    name,
-                    price,
-                    category,
-                    stock
-                })
-                .eq("id", req.params.id)
-                .eq("store_id", store.id)
-                .select("id");
+                .update(updates)
+                .eq("id", req.params.id);
+
+            // Store owners can update only their own products.
+            // Admins can update products across all stores.
+            if (req.user.role === "store_owner") {
+                const { data: store, error: storeError } =
+                    await supabase
+                        .from("stores")
+                        .select("id")
+                        .eq("owner_id", req.user.id)
+                        .maybeSingle();
+
+                if (storeError) {
+                    console.error(
+                        "Store lookup failed:",
+                        storeError.message
+                    );
+
+                    return res.status(500).json({
+                        message: "Unable to verify store ownership"
+                    });
+                }
+
+                if (!store) {
+                    return res.status(404).json({
+                        message: "No store is assigned to this account"
+                    });
+                }
+
+                query = query.eq("store_id", store.id);
+            }
+
+            const { data, error } = await query.select("id");
 
             if (error) {
                 console.error("Product update failed:", error.message);
+
                 return res.status(500).json({
                     message: "Unable to update product"
                 });
@@ -385,7 +431,7 @@ app.put(
 
             if (!data || data.length === 0) {
                 return res.status(404).json({
-                    message: "Product not found in your store"
+                    message: "Product not found or access denied"
                 });
             }
 
@@ -395,13 +441,13 @@ app.put(
 
         } catch (error) {
             console.error("Product update error:", error.message);
+
             return res.status(500).json({
                 message: "Server error while updating product"
             });
         }
     }
 );
-
 app.post(
     "/upload",
     authenticateToken,
