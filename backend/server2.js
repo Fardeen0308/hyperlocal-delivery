@@ -1141,7 +1141,7 @@ app.post("/login", async (req, res) => {
         const match = await bcrypt.compare(password, user.password);
 
         if (match) {
-    const { password, ...safeUser } = user;
+    const { password: userPassword, ...safeUser } = user;
 
     const token = jwt.sign(
         {
@@ -1173,7 +1173,7 @@ app.post("/login", async (req, res) => {
         const match = await bcrypt.compare(password, partner.password);
 
         if (match) {
-    const { password, ...safePartner } = partner;
+    const { password: partnerPassword, ...safePartner } = partner;
 
     const token = jwt.sign(
         {
@@ -1228,7 +1228,7 @@ if (isAdminPasswordMatch) {
             });
         }
     }
-        const { password, ...safeAdmin } = admin;
+        const { password: adminPassword, ...safeAdmin } = admin;
 
 const token = jwt.sign(
     {
