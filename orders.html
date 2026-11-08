@@ -141,6 +141,8 @@ if(order.status=="Delivered"){
 
            <p><b>Products:</b> ₹${order.subtotal}</p>
 
+           ${renderOrderReturns(order)}
+
 <p><b>Delivery:</b> ₹${order.delivery}</p>
 
 <p><b>GST:</b> ₹${order.gst}</p>
@@ -437,6 +439,200 @@ function openChat(email) {
     window.location.href = "customer-chat.html";
 }
 
+let customerReturnRequests = [];
+
+async function loadMyReturnRequests() {
+    try {
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/my-returns",
+            {
+                headers: {
+                    "Authorization": "Bearer " + token
+                },
+                cache: "no-store"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Return history error:", data.message);
+            return;
+        }
+
+        customerReturnRequests = data || [];
+
+        // Refresh orders to display updated return status
+        loadOrders();
+
+    } catch (error) {
+        console.error("Unable to load return history:", error);
+    }
+}
+
+function getProductReturnStatus(orderId, productId) {
+    return customerReturnRequests.find(request =>
+        String(request.order_id) === String(orderId) &&
+        Number(request.product_id) === Number(productId)
+    );
+}
+
+async function submitReturnRequest(orderId, productId) {
+    const quantityInput = document.getElementById(
+        `return-quantity-${orderId}-${productId}`
+    );
+
+    const reasonInput = document.getElementById(
+        `return-reason-${orderId}-${productId}`
+    );
+
+    const descriptionInput = document.getElementById(
+        `return-description-${orderId}-${productId}`
+    );
+
+    if (!quantityInput || !reasonInput || !reasonInput.value) {
+        alert("Please select a return reason.");
+        return;
+    }
+
+    const quantity = Number(quantityInput.value);
+
+    if (!Number.isSafeInteger(quantity) || quantity < 1) {
+        alert("Please enter a valid quantity.");
+        return;
+    }
+
+    if (!confirm("Submit this return request?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/returns",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({
+                    orderId,
+                    productId,
+                    quantity,
+                    reason: reasonInput.value,
+                    description: descriptionInput.value
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Unable to submit return request");
+            return;
+        }
+
+        alert(data.message);
+
+        await loadMyReturnRequests();
+
+    } catch (error) {
+        console.error("Return submission error:", error);
+        alert("Unable to submit return request.");
+    }
+}
+
+function renderOrderReturns(order) {
+    const products = Array.isArray(order.products)
+        ? order.products
+        : [];
+
+    if (order.status !== "Delivered") {
+        return "";
+    }
+
+    if (!order.delivered_at) {
+        return "<p>Return eligibility date unavailable. Please contact support.</p>";
+    }
+
+    const deliveredTime = new Date(order.delivered_at).getTime();
+    const deadline = deliveredTime + (5 * 24 * 60 * 60 * 1000);
+    const remaining = deadline - Date.now();
+
+    return `
+        <div class="return-section">
+            <h3>🔄 Product Returns</h3>
+            ${products.map(product => {
+                const productId = Number(product.id);
+                const request = getProductReturnStatus(order.id, productId);
+                const quantity = Number(product.quantity);
+
+                if (product.is_returnable !== true) {
+                    return `
+                        <p>${product.name}: Returns not available.</p>
+                    `;
+                }
+
+                if (request) {
+                    return `
+                        <div class="return-status">
+                            <p><b>${product.name}</b></p>
+                            <p>Return quantity: ${request.quantity}</p>
+                            <p>Return status: <b>${request.status}</b></p>
+                            ${request.admin_note
+                                ? `<p>Admin note: ${request.admin_note}</p>`
+                                : ""}
+                        </div>
+                    `;
+                }
+
+                if (remaining <= 0) {
+                    return `
+                        <p>${product.name}: 5-day return period expired.</p>
+                    `;
+                }
+
+                return `
+                    <div class="return-product">
+                        <p><b>${product.name}</b></p>
+                        <p>Return deadline:
+                            ${new Date(deadline).toLocaleString()}
+                        </p>
+                        <p>Time remaining: ${Math.ceil(remaining / (1000 * 60 * 60))} hours</p>
+
+                        <label>Quantity to return:</label>
+                        <select id="return-quantity-${order.id}-${productId}">
+                            ${Array.from(
+                                { length: quantity },
+                                (_, i) => `<option value="${i + 1}">${i + 1}</option>`
+                            ).join("")}
+                        </select>
+
+                        <label>Return reason:</label>
+                        <select id="return-reason-${order.id}-${productId}">
+                            <option value="">Select reason</option>
+                            <option value="Damaged product">Damaged product</option>
+                            <option value="Wrong product received">Wrong product received</option>
+                            <option value="Defective product">Defective product</option>
+                            <option value="Product not as described">Product not as described</option>
+                            <option value="Other">Other</option>
+                        </select>
+
+                        <textarea
+                            id="return-description-${order.id}-${productId}"
+                            placeholder="Additional details (optional)"
+                        ></textarea>
+
+                        <button onclick="submitReturnRequest('${order.id}', '${productId}')">
+                            🔄 Request Return
+                        </button>
+                    </div>
+                `;
+            }).join("")}
+        </div>
+    `;
+}
+loadMyReturnRequests();
 
 </script>
 

@@ -73,6 +73,8 @@ async function addProduct() {
     const price = document.getElementById("productPrice").value;
     const category = document.getElementById("productCategory").value;
     const stock = document.getElementById("productStock").value;
+    const is_returnable =
+    document.getElementById("productReturnable").checked = false;
 
     if (uploadedImageUrls.length === 0) {
         alert("Please upload product images first");
@@ -93,7 +95,8 @@ async function addProduct() {
                 category,
                 stock,
                 image: uploadedImageUrls[0],
-                images: uploadedImageUrls
+                images: uploadedImageUrls,
+                is_returnable
             })
         }
     );
@@ -152,6 +155,15 @@ async function loadProducts() {
             <p>${product.category || "No Category"}</p>
 
             <p>₹${product.price}</p>
+
+            <label>
+    <input
+        type="checkbox"
+        ${product.is_returnable ? "checked" : ""}
+        onchange="updateReturnability('${product.id}', this.checked)"
+    >
+    Allow returns (5 days)
+</label>
 
             <button onclick="deleteProduct('${product.id}')">
                 🗑️ Delete
@@ -356,3 +368,40 @@ async function loadStoreName() {
 
 loadStoreName();
 
+async function updateReturnability(id, is_returnable) {
+
+    try {
+        const response = await fetch(
+            `https://hyperlocal-backend-84rs.onrender.com/products/${id}`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...authHeaders
+                },
+                body: JSON.stringify({
+                    is_returnable
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Unable to update return setting");
+            loadProducts();
+            return;
+        }
+
+        alert(
+            is_returnable
+                ? "Returns enabled for this product!"
+                : "Returns disabled for this product!"
+        );
+
+    } catch (error) {
+        console.error("Return setting error:", error);
+        alert("Unable to update return setting");
+        loadProducts();
+    }
+}

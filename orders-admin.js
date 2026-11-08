@@ -361,3 +361,145 @@ function closeOrder(){
 document.getElementById("orderModal").style.display="none";
 
 }
+// ===============================
+// CUSTOMER RETURN MANAGEMENT
+// ===============================
+
+async function loadReturnRequests() {
+    const container = document.getElementById("returnRequests");
+
+    try {
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/returns",
+            {
+                headers: authHeaders,
+                cache: "no-store"
+            }
+        );
+
+        const requests = await response.json();
+
+        if (!response.ok) {
+            container.innerHTML = `
+                <p>Unable to load return requests:
+                ${requests.message || "Server error"}</p>
+            `;
+            return;
+        }
+
+        container.innerHTML = "";
+
+        if (!requests.length) {
+            container.innerHTML = "<p>No return requests yet.</p>";
+            return;
+        }
+
+        requests.forEach(request => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const details = document.createElement("div");
+
+            const fields = [
+                ["Return ID", request.id],
+                ["Order ID", request.order_id],
+                ["Customer", request.customer_email],
+                ["Product", request.product_name || "Not recorded"],
+                ["Product ID", request.product_id || "Not recorded"],
+                ["Quantity", request.quantity || "Not recorded"],
+                ["Reason", request.reason],
+                ["Description", request.description || "None"],
+                ["Requested", request.created_at
+                    ? new Date(request.created_at).toLocaleString()
+                    : "Unknown"],
+                ["Status", request.status],
+                ["Refund status", request.refund_status || "Not processed"],
+                ["Refund amount", request.refund_amount ?? "Not set"]
+            ];
+
+            fields.forEach(([label, value]) => {
+                const p = document.createElement("p");
+                const strong = document.createElement("strong");
+                strong.textContent = label + ": ";
+                p.append(strong, document.createTextNode(String(value)));
+                details.appendChild(p);
+            });
+
+            card.appendChild(details);
+
+            if (request.status === "Pending") {
+                const note = document.createElement("textarea");
+                note.id = "return-note-" + request.id;
+                note.placeholder = "Admin note (optional)";
+                note.rows = 3;
+                note.style.width = "100%";
+
+                const approve = document.createElement("button");
+                approve.textContent = "✅ Approve";
+                approve.onclick = () =>
+                    reviewReturn(request.id, "Approved");
+
+                const reject = document.createElement("button");
+                reject.textContent = "❌ Reject";
+                reject.onclick = () =>
+                    reviewReturn(request.id, "Rejected");
+
+                card.append(note, approve, reject);
+            } else if (request.admin_note) {
+                const note = document.createElement("p");
+                note.textContent = "Admin note: " + request.admin_note;
+                card.appendChild(note);
+            }
+
+            container.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error("Load return requests error:", error);
+        container.innerHTML = "<p>Unable to load return requests.</p>";
+    }
+}
+
+async function reviewReturn(id, status) {
+    const action = status === "Approved" ? "approve" : "reject";
+
+    if (!confirm("Are you sure you want to " + action + " this return?")) {
+        return;
+    }
+
+    const note = document.getElementById("return-note-" + id);
+
+    try {
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/returns/" + id,
+            {
+                method: "PUT",
+                headers: {
+                    ...authHeaders,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    status,
+                    admin_note: note ? note.value : ""
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Unable to update return request");
+            return;
+        }
+
+        alert(data.message);
+        await loadReturnRequests();
+
+    } catch (error) {
+        console.error("Review return error:", error);
+        alert("Unable to update return request");
+    }
+}
+
+// Load return requests when admin page opens
+loadReturnRequests();
