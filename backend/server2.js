@@ -1395,7 +1395,7 @@ app.post(
                 error: productError
             } = await supabase
                 .from("products")
-                .select("id, name, price, stock, store_id")
+                .select("id, name, price, stock, store_id, is_returnable")
                 .in("id", productIds);
 
             if (productError) {
@@ -1468,7 +1468,8 @@ app.post(
                     name: product.name,
                     price: pricePaise / 100,
                     quantity,
-                    store_id: product.store_id
+                    store_id: product.store_id,
+                    is_returnable: product.is_returnable === true
                 });
             }
 
@@ -1953,7 +1954,12 @@ app.put(
 
             const { error: updateError } = await supabase
                 .from("orders")
-                .update({ status: newStatus })
+                .update({
+    status: newStatus,
+    ...(newStatus === "Delivered" && order.status !== "Delivered"
+        ? { delivered_at: new Date().toISOString() }
+        : {})
+})
                 .eq("id", req.params.id);
 
             if (updateError) {
@@ -2821,7 +2827,10 @@ app.post(
             const { data: updatedOrder, error: updateError } =
                 await supabase
                     .from("orders")
-                    .update({ status: "Delivered" })
+                    .update({
+    status: "Delivered",
+    delivered_at: new Date().toISOString()
+})
                     .eq("id", orderId)
                     .eq("status", order.status)
                     .select("id")
@@ -3860,8 +3869,11 @@ app.put(
                 await supabase
                     .from("orders")
                     .update({
-                        status: req.body.status
-                    })
+    status: req.body.status,
+    ...(req.body.status === "Delivered" && order.status !== "Delivered"
+        ? { delivered_at: new Date().toISOString() }
+        : {})
+})
                     .eq("id", req.params.id);
 
             if (updateError) {
@@ -4360,6 +4372,370 @@ app.post("/reset-password", async (req, res) => {
         });
     }
 });
+
+app.post(
+    "/returns",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
+        try {
+            const {
+                orderId,
+                productId,
+                quantity,
+                reason,
+                description
+            } = req.body;
+
+            // 1. Validate request details
+            const validOrderId =
+                (typeof orderId === "string" && /^\d+$/.test(orderId)) ||
+                (Number.isSafeInteger(orderId) && orderId > 0);
+
+            const validProductId =
+                Number.isSafeInteger(Number(productId)) &&
+                Number(productId) > 0;
+
+            const requestedQuantity = Number(quantity);
+
+            if (
+                !validOrderId ||
+                !validProductId ||
+                !Number.isSafeInteger(requestedQuantity) ||
+                requestedQuantity < 1 ||
+                requestedQuantity > 100
+            ) {
+                return res.status(400).json({
+                    message: "Invalid order, product or quantity"
+                });
+            }
+
+            if (
+                typeof reason !== "string" ||
+                !reason.trim() ||
+                reason.trim().length > 200
+            ) {
+                return res.status(400).json({
+                    message: "Please provide a valid return reason"
+                });
+            }
+
+            const cleanDescription =
+                typeof description === "string"
+                    ? description.trim()
+                    : "";
+
+            if (cleanDescription.length > 2000) {
+                return res.status(400).json({
+                    message: "Description is too long"
+                });
+            }
+
+            // 2. Fetch the order
+            const { data: order, error: orderError } = await supabase
+                .from("orders")
+                .select("id, email, status, delivered_at, products")
+                .eq("id", orderId)
+                .maybeSingle();
+
+            if (orderError) {
+                console.error("Return order lookup failed:", orderError.message);
+
+                return res.status(500).json({
+                    message: "Unable to verify order"
+                });
+            }
+
+            if (!order) {
+                return res.status(404).json({
+                    message: "Order not found"
+                });
+            }
+
+            // 3. Verify customer ownership
+            if (
+                order.email?.toLowerCase() !==
+                req.user.email?.toLowerCase()
+            ) {
+                return res.status(403).json({
+                    message: "You cannot request a return for this order"
+                });
+            }
+
+            // 4. Only delivered orders qualify
+            if (order.status !== "Delivered") {
+                return res.status(400).json({
+                    message: "Only delivered orders can be returned"
+                });
+            }
+
+            // 5. Verify delivery timestamp
+            if (!order.delivered_at) {
+                return res.status(400).json({
+                    message:
+                        "Delivery date is unavailable for this order. Please contact support."
+                });
+            }
+
+            const deliveredAt = new Date(order.delivered_at);
+            const now = Date.now();
+            const fiveDays = 5 * 24 * 60 * 60 * 1000;
+
+            if (
+                Number.isNaN(deliveredAt.getTime()) ||
+                deliveredAt.getTime() > now
+            ) {
+                return res.status(400).json({
+                    message: "Invalid delivery date"
+                });
+            }
+
+            if (now - deliveredAt.getTime() > fiveDays) {
+                return res.status(400).json({
+                    message: "The 5-day return period has expired"
+                });
+            }
+
+            // 6. Find the purchased product in the saved order
+            const orderProducts = Array.isArray(order.products)
+                ? order.products
+                : [];
+
+            const purchasedProduct = orderProducts.find(
+                item => Number(item.id) === Number(productId)
+            );
+
+            if (!purchasedProduct) {
+                return res.status(400).json({
+                    message: "This product is not part of your order"
+                });
+            }
+
+            // 7. Check return eligibility saved at purchase time
+            if (purchasedProduct.is_returnable !== true) {
+                return res.status(400).json({
+                    message: "This product is not eligible for returns"
+                });
+            }
+
+            const purchasedQuantity = Number(purchasedProduct.quantity);
+
+            if (
+                !Number.isSafeInteger(purchasedQuantity) ||
+                purchasedQuantity < 1 ||
+                requestedQuantity > purchasedQuantity
+            ) {
+                return res.status(400).json({
+                    message: "Return quantity exceeds purchased quantity"
+                });
+            }
+
+            // 8. Save the return request
+            const { data: returnRequest, error: returnError } =
+                await supabase
+                    .from("order_returns")
+                    .insert({
+                        order_id: order.id,
+                        customer_email: req.user.email,
+                        product_id: Number(productId),
+                        product_name: purchasedProduct.name,
+                        quantity: requestedQuantity,
+                        reason: reason.trim(),
+                        description: cleanDescription || null,
+                        status: "Pending"
+                    })
+                    .select()
+                    .single();
+
+            if (returnError) {
+                if (returnError.code === "23505") {
+                    return res.status(409).json({
+                        message:
+                            "A return request already exists for this product in this order"
+                    });
+                }
+
+                console.error(
+                    "Return request creation failed:",
+                    returnError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to create return request"
+                });
+            }
+
+            return res.status(201).json({
+                message: "Return request submitted successfully",
+                returnRequest
+            });
+
+        } catch (error) {
+            console.error("Return request error:", error.message);
+
+            return res.status(500).json({
+                message: "Unable to submit return request"
+            });
+        }
+    }
+);
+
+app.get(
+    "/my-returns",
+    authenticateToken,
+    requireRole("customer"),
+    async (req, res) => {
+        try {
+            const { data, error } = await supabase
+                .from("order_returns")
+                .select("*")
+                .eq("customer_email", req.user.email)
+                .order("created_at", { ascending: false });
+
+            if (error) {
+                console.error("Customer returns lookup failed:", error.message);
+
+                return res.status(500).json({
+                    message: "Unable to load your return requests"
+                });
+            }
+
+            return res.json(data || []);
+
+        } catch (error) {
+            console.error("My returns error:", error.message);
+
+            return res.status(500).json({
+                message: "Unable to load return requests"
+            });
+        }
+    }
+);
+
+app.get(
+    "/returns",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+        try {
+            const { data, error } = await supabase
+                .from("order_returns")
+                .select("*")
+                .order("created_at", { ascending: false });
+
+            if (error) {
+                console.error("Fetch returns error:", error.message);
+                return res.status(500).json({
+                    message: "Unable to load return requests"
+                });
+            }
+
+            return res.json(data || []);
+
+        } catch (error) {
+            console.error("Returns error:", error.message);
+            return res.status(500).json({
+                message: "Server error"
+            });
+        }
+    }
+);
+
+app.put(
+    "/returns/:id",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+        try {
+            const { status, admin_note } = req.body;
+
+            if (!["Approved", "Rejected"].includes(status)) {
+                return res.status(400).json({
+                    message: "Status must be Approved or Rejected"
+                });
+            }
+
+            if (
+                admin_note !== undefined &&
+                (
+                    typeof admin_note !== "string" ||
+                    admin_note.trim().length > 1000
+                )
+            ) {
+                return res.status(400).json({
+                    message: "Invalid admin note"
+                });
+            }
+
+            const { data: existingReturn, error: fetchError } =
+                await supabase
+                    .from("order_returns")
+                    .select("id, status")
+                    .eq("id", req.params.id)
+                    .maybeSingle();
+
+            if (fetchError) {
+                console.error("Return lookup error:", fetchError.message);
+                return res.status(500).json({
+                    message: "Unable to retrieve return request"
+                });
+            }
+
+            if (!existingReturn) {
+                return res.status(404).json({
+                    message: "Return request not found"
+                });
+            }
+
+            if (existingReturn.status !== "Pending") {
+                return res.status(409).json({
+                    message: "This return request has already been reviewed"
+                });
+            }
+
+            const updates = {
+                status,
+                updated_at: new Date().toISOString()
+            };
+
+            if (admin_note !== undefined) {
+                updates.admin_note = admin_note.trim() || null;
+            }
+
+            const { data, error } = await supabase
+                .from("order_returns")
+                .update(updates)
+                .eq("id", req.params.id)
+                .eq("status", "Pending")
+                .select()
+                .maybeSingle();
+
+            if (error) {
+                console.error("Return update error:", error.message);
+                return res.status(500).json({
+                    message: "Unable to update return request"
+                });
+            }
+
+            if (!data) {
+                return res.status(409).json({
+                    message: "Return request was already updated"
+                });
+            }
+
+            return res.json({
+                message: "Return request " + status.toLowerCase() + " successfully",
+                returnRequest: data
+            });
+
+        } catch (error) {
+            console.error("Return review error:", error.message);
+            return res.status(500).json({
+                message: "Unable to review return request"
+            });
+        }
+    }
+);
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
