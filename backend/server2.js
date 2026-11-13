@@ -2313,7 +2313,7 @@ app.put(
                     ? req.body.email.trim().toLowerCase()
                     : "";
 
-            if (!orderId || !orderId.trim()) {
+            if (!orderId || !String(orderId).trim()) {
                 return res.status(400).json({
                     message: "Order ID is required"
                 });
@@ -2325,19 +2325,16 @@ app.put(
                 });
             }
 
-            // Retrieve the order
-            const { data: order, error: orderFetchError } = await supabase
-                .from("orders")
-                .select("id, status, deliveryPartnerId")
-                .eq("id", orderId)
-                .maybeSingle();
+            // Retrieve order for validation
+            const { data: order, error: orderFetchError } =
+                await supabase
+                    .from("orders")
+                    .select("id, status, deliveryPartnerId")
+                    .eq("id", orderId)
+                    .maybeSingle();
 
             if (orderFetchError) {
-                console.error(
-                    "Order lookup failed:",
-                    orderFetchError.message
-                );
-
+                console.error(orderFetchError.message);
                 return res.status(500).json({
                     message: "Unable to retrieve order"
                 });
@@ -2355,26 +2352,22 @@ app.put(
                 });
             }
 
-            // Do not overwrite an existing assignment
             if (order.deliveryPartnerId) {
                 return res.status(409).json({
                     message: "This order already has a delivery partner assigned"
                 });
             }
 
-            // Find the selected delivery partner
-            const { data: partner, error: partnerError } = await supabase
-                .from("deliveryPartners")
-                .select("id, name, email, status, fcmToken")
-                .ilike("email", partnerEmail)
-                .maybeSingle();
+            // Retrieve partner notification details
+            const { data: partner, error: partnerError } =
+                await supabase
+                    .from("deliveryPartners")
+                    .select("name, email, fcmToken")
+                    .ilike("email", partnerEmail)
+                    .maybeSingle();
 
             if (partnerError) {
-                console.error(
-                    "Partner lookup failed:",
-                    partnerError.message
-                );
-
+                console.error(partnerError.message);
                 return res.status(500).json({
                     message: "Unable to retrieve delivery partner"
                 });
@@ -2386,91 +2379,46 @@ app.put(
                 });
             }
 
-            if (partner.status !== "Available") {
-                return res.status(409).json({
-                    message: "Delivery partner is not available"
+            // Atomic assignment through PostgreSQL function
+            const { data: assignment, error: assignmentError } =
+                await supabase.rpc("assign_delivery_job", {
+                    p_job_type: "normal",
+                    p_job_id: order.id,
+                    p_partner_email: partner.email,
+                    p_pickup_note: null
                 });
-            }
 
-            // Check whether the partner already has an active delivery
-            const { data: activeOrders, error: activeOrdersError } =
-                await supabase
-                    .from("orders")
-                    .select("id")
-                    .eq("deliveryPartnerId", partner.id)
-                    .in("status", [
-                        "Preparing",
-                        "Ready",
-                        "Out for Delivery"
-                    ])
-                    .limit(1);
-
-            if (activeOrdersError) {
+            if (assignmentError) {
                 console.error(
-                    "Active delivery lookup failed:",
-                    activeOrdersError.message
+                    "Delivery assignment error:",
+                    assignmentError.message
                 );
 
-                return res.status(500).json({
-                    message: "Unable to verify partner availability"
-                });
-            }
+                const message = assignmentError.message || "";
 
-            if (activeOrders && activeOrders.length > 0) {
-                return res.status(409).json({
-                    message: "This partner already has an active delivery"
-                });
-            }
+                if (message.includes("not found")) {
+                    return res.status(404).json({
+                        message: "Delivery partner not found"
+                    });
+                }
 
-            // Conditional order update: do not overwrite an existing assignment
-            const { data: updatedOrder, error: orderError } = await supabase
-                .from("orders")
-                .update({
-                    deliveryPartnerId: partner.id,
-                    deliveryPartnerName: partner.name,
-                    deliveryPartnerEmail: partner.email,
-                    status: "Out for Delivery"
-                })
-                .eq("id", orderId)
-                .is("deliveryPartnerId", null)
-                .not("status", "in", '("Delivered","Cancelled")')
-                .select("id");
-
-            if (orderError) {
-                console.error(
-                    "Order assignment failed:",
-                    orderError.message
-                );
+                if (
+                    message.includes("not available") ||
+                    message.includes("active job") ||
+                    message.includes("already") ||
+                    message.includes("not available for assignment")
+                ) {
+                    return res.status(409).json({
+                        message: message
+                    });
+                }
 
                 return res.status(500).json({
                     message: "Unable to assign delivery partner"
                 });
             }
 
-            if (!updatedOrder || updatedOrder.length === 0) {
-                return res.status(409).json({
-                    message: "The order changed or was assigned by another request. Refresh and try again."
-                });
-            }
-
-            // Mark the partner busy
-            const { error: busyError } = await supabase
-                .from("deliveryPartners")
-                .update({ status: "Busy" })
-                .eq("id", partner.id)
-                .eq("status", "Available");
-
-            if (busyError) {
-                console.error(
-                    "Partner status update failed:",
-                    busyError.message
-                );
-
-                return res.status(500).json({
-                    message: "Order assigned, but partner status needs attention"
-                });
-            }
-
+            // Send notification after successful assignment
             if (partner.fcmToken) {
                 try {
                     await sendNotification(
@@ -2487,7 +2435,8 @@ app.put(
             }
 
             return res.json({
-                message: "Delivery Partner Assigned Successfully"
+                message: "Delivery Partner Assigned Successfully",
+                assignment
             });
 
         } catch (error) {
@@ -2518,86 +2467,47 @@ app.put(
                 });
             }
 
-            // Find the logged-in delivery partner
-            const { data: partner, error: partnerError } = await supabase
-                .from("deliveryPartners")
-                .select("id, email, status")
-                .ilike("email", String(req.user.email || ""))
-                .maybeSingle();
-
-            if (partnerError) {
-                console.error(
-                    "Delivery partner lookup failed:",
-                    partnerError.message
-                );
-
-                return res.status(500).json({
-                    message: "Unable to retrieve delivery partner"
+            const { data: result, error } =
+                await supabase.rpc("set_delivery_partner_status", {
+                    p_partner_email: req.user.email,
+                    p_status: status
                 });
-            }
 
-            if (!partner) {
-                return res.status(404).json({
-                    message: "Delivery partner not found"
-                });
-            }
-
-            // Check whether this partner has an active delivery
-            const { data: activeOrders, error: ordersError } = await supabase
-                .from("orders")
-                .select("id")
-                .eq("deliveryPartnerId", partner.id)
-                .in("status", [
-                    "Out for Delivery",
-                    "Preparing",
-                    "Ready"
-                ])
-                .limit(1);
-
-            if (ordersError) {
-                console.error(
-                    "Active order lookup failed:",
-                    ordersError.message
-                );
-
-                return res.status(500).json({
-                    message: "Unable to verify active deliveries"
-                });
-            }
-
-            // A partner with an active order cannot mark themselves Available
-            if (status === "Available" && activeOrders.length > 0) {
-                return res.status(409).json({
-                    message: "You cannot become available while you have an active delivery"
-                });
-            }
-
-            const { data: updatedPartner, error: updateError } = await supabase
-                .from("deliveryPartners")
-                .update({ status })
-                .eq("id", partner.id)
-                .select("id");
-
-            if (updateError) {
+            if (error) {
                 console.error(
                     "Delivery status update failed:",
-                    updateError.message
+                    error.message
                 );
+
+                if (error.message.includes("Delivery partner not found")) {
+                    return res.status(404).json({
+                        message: "Delivery partner not found"
+                    });
+                }
+
+                if (
+                    error.message.includes("active delivery") ||
+                    error.message.includes("active return pickup")
+                ) {
+                    return res.status(409).json({
+                        message: error.message
+                    });
+                }
+
+                if (error.message.includes("Invalid delivery status")) {
+                    return res.status(400).json({
+                        message: "Invalid delivery status"
+                    });
+                }
 
                 return res.status(500).json({
                     message: "Unable to update delivery status"
                 });
             }
 
-            if (!updatedPartner || updatedPartner.length === 0) {
-                return res.status(409).json({
-                    message: "Delivery status could not be updated"
-                });
-            }
-
             return res.json({
                 message: "Delivery status updated successfully",
-                status
+                status: result.status
             });
 
         } catch (error) {
@@ -4732,6 +4642,534 @@ app.put(
             console.error("Return review error:", error.message);
             return res.status(500).json({
                 message: "Unable to review return request"
+            });
+        }
+    }
+);
+
+app.put(
+    "/returns/:id/schedule-pickup",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+        try {
+            const {
+                pickup_method,
+                delivery_partner_email,
+                pickup_note
+            } = req.body;
+
+            if (
+                !["delivery_partner", "store_owner"].includes(pickup_method)
+            ) {
+                return res.status(400).json({
+                    message: "Invalid pickup method"
+                });
+            }
+
+            if (
+                pickup_note !== undefined &&
+                (
+                    typeof pickup_note !== "string" ||
+                    pickup_note.trim().length > 1000
+                )
+            ) {
+                return res.status(400).json({
+                    message: "Invalid pickup note"
+                });
+            }
+
+            const { data: returnRequest, error: returnError } =
+                await supabase
+                    .from("order_returns")
+                    .select("id, order_id, product_id, status")
+                    .eq("id", req.params.id)
+                    .maybeSingle();
+
+            if (returnError) {
+                console.error(returnError.message);
+                return res.status(500).json({
+                    message: "Unable to retrieve return request"
+                });
+            }
+
+            if (!returnRequest) {
+                return res.status(404).json({
+                    message: "Return request not found"
+                });
+            }
+
+            if (returnRequest.status !== "Approved") {
+                return res.status(409).json({
+                    message: "Only approved returns can be scheduled"
+                });
+            }
+
+            const cleanNote =
+                typeof pickup_note === "string"
+                    ? pickup_note.trim() || null
+                    : null;
+
+            // DELIVERY PARTNER PICKUP
+            if (pickup_method === "delivery_partner") {
+                if (
+                    typeof delivery_partner_email !== "string" ||
+                    !delivery_partner_email.trim()
+                ) {
+                    return res.status(400).json({
+                        message: "Delivery partner email is required"
+                    });
+                }
+
+                const partnerEmail =
+                    delivery_partner_email.trim().toLowerCase();
+
+                const { data: result, error: assignmentError } =
+                    await supabase.rpc("assign_delivery_job", {
+                        p_job_type: "return",
+                        p_job_id: returnRequest.id,
+                        p_partner_email: partnerEmail,
+                        p_pickup_note: cleanNote
+                    });
+
+                if (assignmentError) {
+                    console.error(
+                        "Return pickup assignment error:",
+                        assignmentError.message
+                    );
+
+                    const message = assignmentError.message || "";
+
+                    if (
+                        message.includes("not found")
+                    ) {
+                        return res.status(404).json({
+                            message: "Delivery partner not found"
+                        });
+                    }
+
+                    if (
+                        message.includes("not available") ||
+                        message.includes("active job") ||
+                        message.includes("already") ||
+                        message.includes("not approved")
+                    ) {
+                        return res.status(409).json({
+                            message: message
+                        });
+                    }
+
+                    return res.status(500).json({
+                        message: "Unable to assign return pickup"
+                    });
+                }
+
+                const { data: updatedReturn, error: fetchError } =
+                    await supabase
+                        .from("order_returns")
+                        .select("*")
+                        .eq("id", returnRequest.id)
+                        .single();
+
+                if (fetchError) {
+                    console.error(fetchError.message);
+                    return res.status(500).json({
+                        message: "Pickup was assigned, but details could not be retrieved"
+                    });
+                }
+
+                return res.json({
+                    message: "Return pickup scheduled successfully",
+                    returnRequest: updatedReturn,
+                    assignment: result
+                });
+            }
+
+            // STORE OWNER PICKUP — existing flow preserved
+            const { data: order, error: orderError } =
+                await supabase
+                    .from("orders")
+                    .select("products")
+                    .eq("id", returnRequest.order_id)
+                    .maybeSingle();
+
+            if (orderError || !order) {
+                console.error(orderError?.message);
+                return res.status(500).json({
+                    message: "Unable to find original order"
+                });
+            }
+
+            const purchasedProduct = (order.products || []).find(
+                item =>
+                    Number(item.id) === Number(returnRequest.product_id)
+            );
+
+            if (!purchasedProduct?.store_id) {
+                return res.status(400).json({
+                    message: "Store information unavailable"
+                });
+            }
+
+            const { data: store, error: storeError } =
+                await supabase
+                    .from("stores")
+                    .select("id, owner_id, store_name")
+                    .eq("id", purchasedProduct.store_id)
+                    .maybeSingle();
+
+            if (storeError || !store) {
+                console.error(storeError?.message);
+                return res.status(500).json({
+                    message: "Unable to find product store"
+                });
+            }
+
+            const { data: owner, error: ownerError } =
+                await supabase
+                    .from("users")
+                    .select("email")
+                    .eq("id", store.owner_id)
+                    .maybeSingle();
+
+            if (ownerError || !owner?.email) {
+                console.error(ownerError?.message);
+                return res.status(500).json({
+                    message: "Unable to identify store owner"
+                });
+            }
+
+            const { data: updatedReturn, error: updateError } =
+                await supabase
+                    .from("order_returns")
+                    .update({
+                        pickup_method: "store_owner",
+                        pickup_assigned_name: store.store_name,
+                        pickup_assigned_email: owner.email,
+                        pickup_scheduled_at: new Date().toISOString(),
+                        pickup_note: cleanNote,
+                        status: "Pickup Scheduled",
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", returnRequest.id)
+                    .eq("status", "Approved")
+                    .select()
+                    .maybeSingle();
+
+            if (updateError) {
+                console.error(updateError.message);
+                return res.status(500).json({
+                    message: "Unable to schedule pickup"
+                });
+            }
+
+            if (!updatedReturn) {
+                return res.status(409).json({
+                    message: "Return request was already updated"
+                });
+            }
+
+            return res.json({
+                message: "Store owner pickup scheduled successfully",
+                returnRequest: updatedReturn
+            });
+
+        } catch (error) {
+            console.error("Schedule pickup error:", error.message);
+
+            return res.status(500).json({
+                message: "Unable to schedule return pickup"
+            });
+        }
+    }
+);
+
+app.get(
+    "/delivery/my-return-pickups",
+    authenticateToken,
+    requireRole("delivery"),
+    async (req, res) => {
+        try {
+            const { data, error } = await supabase
+                .from("order_returns")
+                .select("*")
+                .ilike("pickup_assigned_email", req.user.email)
+                .eq("pickup_method", "delivery_partner")
+                .in("status", ["Pickup Scheduled", "Picked Up"])
+                .order("pickup_scheduled_at", {
+                    ascending: false
+                });
+
+            if (error) {
+                console.error(
+                    "Delivery return pickups error:",
+                    error.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to load return pickups"
+                });
+            }
+
+            return res.json(data || []);
+
+        } catch (error) {
+            console.error(error.message);
+
+            return res.status(500).json({
+                message: "Server error loading return pickups"
+            });
+        }
+    }
+);
+
+app.put(
+    "/delivery/return-pickups/:id/picked-up",
+    authenticateToken,
+    requireRole("delivery"),
+    async (req, res) => {
+        try {
+            const { data: updatedReturn, error } =
+                await supabase
+                    .from("order_returns")
+                    .update({
+                        status: "Picked Up",
+                        picked_up_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", req.params.id)
+                    .eq("pickup_method", "delivery_partner")
+                    .ilike("pickup_assigned_email", req.user.email)
+                    .eq("status", "Pickup Scheduled")
+                    .select()
+                    .maybeSingle();
+
+            if (error) {
+                console.error(
+                    "Return pickup update failed:",
+                    error.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to update pickup status"
+                });
+            }
+
+            if (!updatedReturn) {
+                return res.status(404).json({
+                    message:
+                        "Assigned pickup not found or already updated"
+                });
+            }
+
+            return res.json({
+                message: "Return product picked up successfully",
+                returnRequest: updatedReturn
+            });
+
+        } catch (error) {
+            console.error(
+                "Picked up route error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                message: "Unable to update return pickup"
+            });
+        }
+    }
+);
+
+app.get(
+    "/store/my-return-pickups",
+    authenticateToken,
+    requireRole("store_owner"),
+    async (req, res) => {
+        try {
+            // 1. Find this store owner's store
+            const { data: store, error: storeError } =
+                await supabase
+                    .from("stores")
+                    .select("id")
+                    .eq("owner_id", req.user.id)
+                    .maybeSingle();
+
+            if (storeError) {
+                console.error(storeError.message);
+
+                return res.status(500).json({
+                    message: "Unable to find your store"
+                });
+            }
+
+            if (!store) {
+                return res.status(404).json({
+                    message: "Store not found"
+                });
+            }
+
+            // 2. Find return pickups assigned to this owner
+            const { data: returns, error: returnsError } =
+                await supabase
+                    .from("order_returns")
+                    .select("*")
+                    .ilike("pickup_assigned_email", req.user.email)
+                    .eq("pickup_method", "store_owner")
+                    .in("status", [
+                        "Pickup Scheduled",
+                        "Picked Up"
+                    ])
+                    .order("pickup_scheduled_at", {
+                        ascending: false
+                    });
+
+            if (returnsError) {
+                console.error(returnsError.message);
+
+                return res.status(500).json({
+                    message: "Unable to load return pickups"
+                });
+            }
+
+            // 3. Verify each returned product belongs to this store
+            const verifiedReturns = [];
+
+            for (const returnItem of returns || []) {
+                const { data: order, error: orderError } =
+                    await supabase
+                        .from("orders")
+                        .select("products")
+                        .eq("id", returnItem.order_id)
+                        .maybeSingle();
+
+                if (orderError) {
+                    console.error(orderError.message);
+
+                    return res.status(500).json({
+                        message: "Unable to verify return products"
+                    });
+                }
+
+                const product = (order?.products || []).find(
+                    item =>
+                        Number(item.id) === Number(returnItem.product_id)
+                );
+
+                if (
+                    product &&
+                    Number(product.store_id) === Number(store.id)
+                ) {
+                    verifiedReturns.push(returnItem);
+                }
+            }
+
+            return res.json(verifiedReturns);
+
+        } catch (error) {
+            console.error(
+                "Store return pickups error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                message: "Unable to load store return pickups"
+            });
+        }
+    }
+);
+
+app.put(
+    "/store/return-pickups/:id/received",
+    authenticateToken,
+    requireRole("store_owner"),
+    async (req, res) => {
+        try {
+            // 1. Find logged-in store owner's store
+            const { data: store, error: storeError } =
+                await supabase
+                    .from("stores")
+                    .select("id")
+                    .eq("owner_id", req.user.id)
+                    .maybeSingle();
+
+            if (storeError || !store) {
+                console.error(storeError?.message);
+
+                return res.status(storeError ? 500 : 404).json({
+                    message: "Unable to find your store"
+                });
+            }
+
+            // 2. Confirm receipt and handle partner availability atomically
+            const { data: result, error: confirmError } =
+                await supabase.rpc("confirm_return_received", {
+                    p_return_id: req.params.id,
+                    p_store_id: store.id,
+                    p_owner_email: req.user.email
+                });
+
+            if (confirmError) {
+                console.error(
+                    "Return receipt confirmation error:",
+                    confirmError.message
+                );
+
+                const message = confirmError.message || "";
+
+                if (
+                    message.includes("not found")
+                ) {
+                    return res.status(404).json({
+                        message: message
+                    });
+                }
+
+                if (
+                    message.includes("not ready") ||
+                    message.includes("not assigned") ||
+                    message.includes("does not belong") ||
+                    message.includes("Invalid pickup")
+                ) {
+                    return res.status(409).json({
+                        message: message
+                    });
+                }
+
+                return res.status(500).json({
+                    message: "Unable to confirm returned product"
+                });
+            }
+
+            // 3. Retrieve updated return request
+            const { data: updatedReturn, error: fetchError } =
+                await supabase
+                    .from("order_returns")
+                    .select("*")
+                    .eq("id", req.params.id)
+                    .single();
+
+            if (fetchError) {
+                console.error(fetchError.message);
+
+                return res.status(500).json({
+                    message: "Return received, but details could not be retrieved"
+                });
+            }
+
+            return res.json({
+                message: "Returned product received successfully",
+                returnRequest: updatedReturn,
+                result
+            });
+
+        } catch (error) {
+            console.error(
+                "Store receipt error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                message: "Unable to confirm return receipt"
             });
         }
     }
