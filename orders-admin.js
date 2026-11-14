@@ -249,11 +249,9 @@ async function assignPartner(orderId) {
 }
 
 async function start() {
-
     await loadDeliveryPartners();
-
     await loadOrders();
-
+    await loadReturnRequests();
 }
 
 start();
@@ -380,10 +378,8 @@ async function loadReturnRequests() {
         const requests = await response.json();
 
         if (!response.ok) {
-            container.innerHTML = `
-                <p>Unable to load return requests:
-                ${requests.message || "Server error"}</p>
-            `;
+            container.innerHTML =
+                `<p>Unable to load returns: ${requests.message || "Server error"}</p>`;
             return;
         }
 
@@ -413,6 +409,11 @@ async function loadReturnRequests() {
                     ? new Date(request.created_at).toLocaleString()
                     : "Unknown"],
                 ["Status", request.status],
+                ["Pickup method", request.pickup_method || "Not assigned"],
+                ["Assigned to", request.pickup_assigned_name || "Not assigned"],
+                ["Pickup scheduled", request.pickup_scheduled_at
+                    ? new Date(request.pickup_scheduled_at).toLocaleString()
+                    : "Not scheduled"],
                 ["Refund status", request.refund_status || "Not processed"],
                 ["Refund amount", request.refund_amount ?? "Not set"]
             ];
@@ -420,8 +421,10 @@ async function loadReturnRequests() {
             fields.forEach(([label, value]) => {
                 const p = document.createElement("p");
                 const strong = document.createElement("strong");
+
                 strong.textContent = label + ": ";
                 p.append(strong, document.createTextNode(String(value)));
+
                 details.appendChild(p);
             });
 
@@ -445,7 +448,92 @@ async function loadReturnRequests() {
                     reviewReturn(request.id, "Rejected");
 
                 card.append(note, approve, reject);
-            } else if (request.admin_note) {
+            }
+
+            // Pickup assignment controls for approved returns
+            if (request.status === "Approved") {
+                const heading = document.createElement("h3");
+                heading.textContent = "Schedule Return Pickup";
+                card.appendChild(heading);
+
+                const methodSelect = document.createElement("select");
+
+                methodSelect.innerHTML = `
+                    <option value="delivery_partner">Delivery Partner Collection</option>
+                    <option value="store_owner">Store Owner Collection</option>
+                `;
+
+                const partnerSelect = document.createElement("select");
+
+                partnerSelect.innerHTML =
+                    `<option value="">Select Available Partner</option>`;
+
+                deliveryPartners.forEach(partner => {
+                    const option = document.createElement("option");
+                    option.value = partner.email;
+                    option.textContent =
+                        `${partner.name} (${partner.email})`;
+                    partnerSelect.appendChild(option);
+                });
+
+                const note = document.createElement("textarea");
+                note.placeholder = "Pickup note (optional)";
+                note.rows = 2;
+                note.style.width = "100%";
+
+                const scheduleButton = document.createElement("button");
+                scheduleButton.textContent = "🛵 Schedule Pickup";
+
+                function updatePickupControls() {
+                    partnerSelect.style.display =
+                        methodSelect.value === "delivery_partner"
+                            ? "block"
+                            : "none";
+
+                    scheduleButton.disabled =
+                        methodSelect.value === "delivery_partner" &&
+                        deliveryPartners.length === 0;
+                }
+
+                methodSelect.addEventListener(
+                    "change",
+                    updatePickupControls
+                );
+
+                scheduleButton.onclick = () =>
+                    scheduleReturnPickup(
+                        request.id,
+                        methodSelect,
+                        partnerSelect,
+                        note,
+                        scheduleButton
+                    );
+
+                updatePickupControls();
+
+                card.append(
+                    methodSelect,
+                    partnerSelect,
+                    note,
+                    scheduleButton
+                );
+            }
+
+            if (request.status === "Pickup Scheduled") {
+                const info = document.createElement("p");
+                info.textContent =
+                    "✅ Pickup has been scheduled. Waiting for collection.";
+                card.appendChild(info);
+            }
+
+            if (request.status === "Returned") {
+                const info = document.createElement("p");
+                info.textContent =
+                    "✅ Returned product received by store owner.";
+                card.appendChild(info);
+            }
+
+            if (request.admin_note) {
                 const note = document.createElement("p");
                 note.textContent = "Admin note: " + request.admin_note;
                 card.appendChild(note);
@@ -456,7 +544,8 @@ async function loadReturnRequests() {
 
     } catch (error) {
         console.error("Load return requests error:", error);
-        container.innerHTML = "<p>Unable to load return requests.</p>";
+        container.innerHTML =
+            "<p>Unable to load return requests.</p>";
     }
 }
 
@@ -503,3 +592,65 @@ async function reviewReturn(id, status) {
 
 // Load return requests when admin page opens
 loadReturnRequests();
+
+async function scheduleReturnPickup(
+    returnId,
+    methodSelect,
+    partnerSelect,
+    note,
+    button
+) {
+    const pickupMethod = methodSelect.value;
+    const partnerEmail = partnerSelect.value;
+
+    if (
+        pickupMethod === "delivery_partner" &&
+        !partnerEmail
+    ) {
+        alert("Please select an available delivery partner.");
+        return;
+    }
+
+    if (!confirm("Confirm return pickup assignment?")) {
+        return;
+    }
+
+    button.disabled = true;
+
+    try {
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/returns/" +
+                returnId + "/schedule-pickup",
+            {
+                method: "PUT",
+                headers: {
+                    ...authHeaders,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    pickup_method: pickupMethod,
+                    delivery_partner_email: partnerEmail,
+                    pickup_note: note.value.trim()
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Unable to schedule pickup");
+            return;
+        }
+
+        alert(data.message || "Pickup scheduled successfully!");
+
+        await loadDeliveryPartners();
+        await loadReturnRequests();
+
+    } catch (error) {
+        console.error("Schedule pickup error:", error);
+        alert("Unable to schedule pickup. Please try again.");
+    } finally {
+        button.disabled = false;
+    }
+}
