@@ -50,7 +50,9 @@ Credit/Debit Card<br><br>
 if (!user) {
     window.location.href = "login.html";
 }
-
+// Coupon functionality is not available on this checkout page
+localStorage.removeItem("couponCode");
+localStorage.removeItem("discount");
 
 async function placeOrder() {
 
@@ -82,8 +84,7 @@ let delivery = 40;
 
 let gst = total * 0.05;
 
-let discount =
-Number(localStorage.getItem("discount")) || 0;
+let discount = 0;
 
 let grandTotal = total + delivery + gst - discount;
 
@@ -112,7 +113,7 @@ console.log("GRAND TOTAL:", grandTotal);
 
         body: JSON.stringify({
     products,
-    couponCode: localStorage.getItem("couponCode") || ""
+    
 })
     }
 );
@@ -168,7 +169,6 @@ const orderResponse = await fetch(
             address,
             email: user.email,
             products,
-            couponCode: localStorage.getItem("couponCode") || "",
             subtotal: total,
             delivery,
             gst,
@@ -226,7 +226,6 @@ window.location.href = "orders.html";
                 address,
                 email: user.email,
                 products,
-                couponCode: localStorage.getItem("couponCode") || "",
                 subtotal: total,
                 delivery,
                 gst,
