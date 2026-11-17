@@ -74,7 +74,7 @@ async function addProduct() {
     const category = document.getElementById("productCategory").value;
     const stock = document.getElementById("productStock").value;
     const is_returnable =
-    document.getElementById("productReturnable").checked = false;
+    document.getElementById("productReturnable").checked;
 
     if (uploadedImageUrls.length === 0) {
         alert("Please upload product images first");
@@ -403,5 +403,173 @@ async function updateReturnability(id, is_returnable) {
         console.error("Return setting error:", error);
         alert("Unable to update return setting");
         loadProducts();
+    }
+}
+loadStoreReturnPickups();
+// ======================================
+// STORE OWNER RETURN PICKUPS
+// ======================================
+
+async function loadStoreReturnPickups() {
+
+    const container =
+        document.getElementById("storeReturnPickups");
+
+    if (!container) return;
+
+    try {
+
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/store/my-return-pickups",
+            {
+                headers: authHeaders,
+                cache: "no-store"
+            }
+        );
+
+        const returns = await response.json();
+
+        if (!response.ok) {
+            container.textContent =
+                returns.message || "Unable to load return pickups.";
+            console.error(returns);
+            return;
+        }
+
+        if (!Array.isArray(returns) || returns.length === 0) {
+            container.textContent =
+                "No incoming return pickups assigned to your store.";
+            return;
+        }
+
+        container.innerHTML = "";
+
+        returns.forEach(item => {
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const details = document.createElement("div");
+
+            const fields = [
+                ["Return ID", item.id],
+                ["Order ID", item.order_id],
+                ["Product", item.product_name],
+                ["Product ID", item.product_id],
+                ["Quantity", item.quantity],
+                ["Customer Email", item.customer_email],
+                ["Pickup Method", item.pickup_method],
+                ["Pickup Status", item.status],
+                [
+                    "Scheduled Time",
+                    item.pickup_scheduled_at
+                        ? new Date(item.pickup_scheduled_at).toLocaleString()
+                        : "Not available"
+                ],
+                ["Pickup Note", item.pickup_note || "None"]
+            ];
+
+            fields.forEach(([label, value]) => {
+
+                const p = document.createElement("p");
+
+                const strong = document.createElement("strong");
+                strong.textContent = label + ": ";
+
+                p.append(
+                    strong,
+                    document.createTextNode(
+                        String(value ?? "Not available")
+                    )
+                );
+
+                details.appendChild(p);
+            });
+
+            card.appendChild(details);
+
+            const button = document.createElement("button");
+
+            button.textContent = "✅ Confirm Received";
+
+            button.onclick = () =>
+                confirmStoreReturnReceived(item.id, button);
+
+            card.appendChild(button);
+
+            container.appendChild(card);
+
+        });
+
+    } catch (error) {
+
+        console.error("Store return pickups error:", error);
+
+        container.textContent =
+            "Unable to load return pickups. Please try again.";
+
+    }
+}
+
+
+// ======================================
+// CONFIRM RETURN RECEIVED BY STORE OWNER
+// ======================================
+
+async function confirmStoreReturnReceived(id, button) {
+
+    const confirmed = confirm(
+        "Have you physically received and checked this returned product?"
+    );
+
+    if (!confirmed) return;
+
+    button.disabled = true;
+    button.textContent = "Confirming...";
+
+    try {
+
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/store/return-pickups/" +
+                encodeURIComponent(id) + "/received",
+            {
+                method: "PUT",
+                headers: authHeaders
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+            alert(
+                data.message ||
+                "Unable to confirm returned product."
+            );
+
+            button.disabled = false;
+            button.textContent = "✅ Confirm Received";
+
+            return;
+        }
+
+        alert(
+            data.message ||
+            "Returned product received successfully!"
+        );
+
+        await loadStoreReturnPickups();
+
+        await loadStats();
+
+    } catch (error) {
+
+        console.error("Store return confirmation error:", error);
+
+        alert("Server error. Please try again.");
+
+        button.disabled = false;
+        button.textContent = "✅ Confirm Received";
+
     }
 }
