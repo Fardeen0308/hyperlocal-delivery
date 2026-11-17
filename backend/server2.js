@@ -5060,13 +5060,15 @@ app.get(
                 });
             }
 
-            // 2. Find return pickups assigned to this owner
+            // 2. Get return pickups for both pickup methods
             const { data: returns, error: returnsError } =
                 await supabase
                     .from("order_returns")
                     .select("*")
-                    .ilike("pickup_assigned_email", req.user.email)
-                    .eq("pickup_method", "store_owner")
+                    .in("pickup_method", [
+                        "store_owner",
+                        "delivery_partner"
+                    ])
                     .in("status", [
                         "Pickup Scheduled",
                         "Picked Up"
@@ -5083,10 +5085,19 @@ app.get(
                 });
             }
 
-            // 3. Verify each returned product belongs to this store
+            // 3. Verify each return belongs to this store
             const verifiedReturns = [];
 
             for (const returnItem of returns || []) {
+
+                // Delivery partner pickups appear only after collection
+                if (
+                    returnItem.pickup_method === "delivery_partner" &&
+                    returnItem.status !== "Picked Up"
+                ) {
+                    continue;
+                }
+
                 const { data: order, error: orderError } =
                     await supabase
                         .from("orders")
