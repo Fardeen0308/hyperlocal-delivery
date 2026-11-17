@@ -5237,6 +5237,280 @@ app.put(
         }
     }
 );
+
+app.put(
+    "/returns/:id/refund",
+    authenticateToken,
+    requireRole("admin"),
+    async (req, res) => {
+        let returnId;
+
+        try {
+            returnId = Number(req.params.id);
+
+            if (!Number.isSafeInteger(returnId) || returnId <= 0) {
+                return res.status(400).json({
+                    message: "Invalid return ID"
+                });
+            }
+
+            // 1. Load the return request
+            const { data: returnItem, error: returnError } =
+                await supabase
+                    .from("order_returns")
+                    .select("*")
+                    .eq("id", returnId)
+                    .maybeSingle();
+
+            if (returnError) {
+                console.error(returnError.message);
+                return res.status(500).json({
+                    message: "Unable to load return request"
+                });
+            }
+
+            if (!returnItem) {
+                return res.status(404).json({
+                    message: "Return request not found"
+                });
+            }
+
+            if (returnItem.status !== "Returned") {
+                return res.status(400).json({
+                    message: "Store must receive the returned product before refund"
+                });
+            }
+
+            if (returnItem.refund_status !== "Not Started") {
+                return res.status(409).json({
+                    message: "Refund has already been started or processed",
+                    refund_status: returnItem.refund_status,
+                    refund_id: returnItem.razorpay_refund_id || null
+                });
+            }
+
+            // 2. Load the original order
+            const { data: order, error: orderError } =
+                await supabase
+                    .from("orders")
+                    .select("products, subtotal, gst, discount, grandTotal, razorpay_payment_id, payment_verified")
+                    .eq("id", returnItem.order_id)
+                    .maybeSingle();
+
+            if (orderError || !order) {
+                console.error(orderError?.message);
+
+                return res.status(404).json({
+                    message: "Original order not found"
+                });
+            }
+
+            if (
+                order.payment_verified !== true ||
+                !order.razorpay_payment_id
+            ) {
+                return res.status(400).json({
+                    message: "Only verified online Razorpay payments can be refunded automatically"
+                });
+            }
+
+            // 3. Find the purchased product snapshot
+            const purchasedProduct = (order.products || []).find(
+                product =>
+                    String(product.id) === String(returnItem.product_id)
+            );
+
+            if (!purchasedProduct) {
+                return res.status(400).json({
+                    message: "Product not found in original order"
+                });
+            }
+
+            if (purchasedProduct.is_returnable !== true) {
+                return res.status(400).json({
+                    message: "This product was not marked as returnable"
+                });
+            }
+
+            const pricePaise = Math.round(
+                Number(purchasedProduct.price) * 100
+            );
+
+            const purchasedQuantity = Number(purchasedProduct.quantity);
+            const returnedQuantity = Number(returnItem.quantity);
+            const subtotalPaise = Math.round(Number(order.subtotal) * 100);
+            const gstPaise = Math.round(Number(order.gst || 0) * 100);
+            const discountPaise = Math.round(Number(order.discount || 0) * 100);
+
+            if (
+                !Number.isSafeInteger(pricePaise) ||
+                pricePaise <= 0 ||
+                !Number.isSafeInteger(purchasedQuantity) ||
+                purchasedQuantity <= 0 ||
+                !Number.isSafeInteger(returnedQuantity) ||
+                returnedQuantity <= 0 ||
+                returnedQuantity > purchasedQuantity ||
+                !Number.isSafeInteger(subtotalPaise) ||
+                subtotalPaise <= 0 ||
+                !Number.isSafeInteger(gstPaise) ||
+                !Number.isSafeInteger(discountPaise)
+            ) {
+                return res.status(400).json({
+                    message: "Invalid original order pricing or return quantity"
+                });
+            }
+
+            // 4. Calculate the returned product amount in paise
+            const returnedProductPaise =
+                pricePaise * returnedQuantity;
+
+            // Allocate GST and coupon discount proportionally
+            const allocatedGstPaise = Math.round(
+                gstPaise * returnedProductPaise / subtotalPaise
+            );
+
+            const allocatedDiscountPaise = Math.round(
+                discountPaise * returnedProductPaise / subtotalPaise
+            );
+
+            const refundPaise =
+                returnedProductPaise +
+                allocatedGstPaise -
+                allocatedDiscountPaise;
+
+            if (
+                !Number.isSafeInteger(refundPaise) ||
+                refundPaise <= 0
+            ) {
+                return res.status(400).json({
+                    message: "Calculated refund amount is invalid"
+                });
+            }
+
+            // 5. Verify the original Razorpay payment is captured
+            const payment = await razorpay.payments.fetch(
+                order.razorpay_payment_id
+            );
+
+            if (
+                payment.id !== order.razorpay_payment_id ||
+                payment.status !== "captured" ||
+                payment.captured !== true ||
+                payment.currency !== "INR" ||
+                payment.amount_refunded + refundPaise > payment.amount
+            ) {
+                return res.status(400).json({
+                    message: "Original payment is not eligible for this refund"
+                });
+            }
+
+            // 6. Atomically claim this return's refund
+            // Only one admin request can change Not Started to Processing.
+            const { data: claimedReturn, error: claimError } =
+                await supabase
+                    .from("order_returns")
+                    .update({
+                        refund_status: "Processing",
+                        refund_amount: refundPaise / 100
+                    })
+                    .eq("id", returnId)
+                    .eq("status", "Returned")
+                    .eq("refund_status", "Not Started")
+                    .is("razorpay_refund_id", null)
+                    .select("id")
+                    .maybeSingle();
+
+            if (claimError) {
+                console.error(claimError.message);
+
+                return res.status(500).json({
+                    message: "Unable to reserve refund request"
+                });
+            }
+
+            if (!claimedReturn) {
+                return res.status(409).json({
+                    message: "Refund is already being processed. Do not retry."
+                });
+            }
+
+            // 7. Create the Razorpay refund
+            // Do not automatically retry if this API call fails:
+            // the request may have reached Razorpay even if a timeout occurred.
+            let razorpayRefund;
+
+            try {
+                razorpayRefund = await razorpay.payments.refund(
+                    order.razorpay_payment_id,
+                    {
+                        amount: refundPaise,
+                        speed: "normal",
+                        receipt: `return_${returnId}`,
+                        notes: {
+                            return_id: String(returnId),
+                            order_id: String(returnItem.order_id)
+                        }
+                    }
+                );
+            } catch (refundError) {
+                console.error(
+                    "Razorpay refund request needs verification:",
+                    refundError.message
+                );
+
+                return res.status(202).json({
+                    message: "Refund request needs verification in Razorpay. Do not retry this return yet.",
+                    refund_status: "Processing"
+                });
+            }
+
+            // 8. Save Razorpay refund details
+            const finalRefundStatus =
+                razorpayRefund.status === "processed"
+                    ? "Completed"
+                    : razorpayRefund.status === "failed"
+                        ? "Failed"
+                        : "Processing";
+
+            const { error: saveError } = await supabase
+                .from("order_returns")
+                .update({
+                    razorpay_refund_id: razorpayRefund.id,
+                    refund_status: finalRefundStatus,
+                    refund_amount: refundPaise / 100
+                })
+                .eq("id", returnId)
+                .eq("refund_status", "Processing");
+
+            if (saveError) {
+                console.error(
+                    "Refund created but database update failed:",
+                    saveError.message,
+                    razorpayRefund.id
+                );
+
+                return res.status(202).json({
+                    message: "Razorpay received the refund. Database status needs reconciliation. Do not retry.",
+                    razorpay_refund_id: razorpayRefund.id
+                });
+            }
+
+            return res.json({
+                message: "Refund request submitted successfully",
+                refund_id: razorpayRefund.id,
+                refund_status: finalRefundStatus,
+                refund_amount: refundPaise / 100
+            });
+
+        } catch (error) {
+            console.error("Refund endpoint error:", error.message);
+
+            return res.status(500).json({
+                message: "Unable to process refund"
+            });
+        }
+    }
+);
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });
