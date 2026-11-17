@@ -4890,7 +4890,7 @@ app.get(
     requireRole("delivery"),
     async (req, res) => {
         try {
-            const { data, error } = await supabase
+            const { data: returns, error } = await supabase
                 .from("order_returns")
                 .select("*")
                 .ilike("pickup_assigned_email", req.user.email)
@@ -4911,10 +4911,62 @@ app.get(
                 });
             }
 
-            return res.json(data || []);
+            if (!returns || returns.length === 0) {
+                return res.json([]);
+            }
+
+            const orderIds = [
+                ...new Set(
+                    returns
+                        .map(item => item.order_id)
+                        .filter(id => id !== null && id !== undefined)
+                )
+            ];
+
+            const { data: orders, error: ordersError } = await supabase
+                .from("orders")
+                .select("id, customerName, phone, address, email")
+                .in("id", orderIds);
+
+            if (ordersError) {
+                console.error(
+                    "Return pickup customer details error:",
+                    ordersError.message
+                );
+
+                return res.status(500).json({
+                    message: "Unable to load customer details"
+                });
+            }
+
+            const orderMap = new Map(
+                (orders || []).map(order => [
+                    String(order.id),
+                    order
+                ])
+            );
+
+            const result = returns.map(item => {
+                const order = orderMap.get(
+                    String(item.order_id)
+                );
+
+                return {
+                    ...item,
+                    customer_name: order?.customerName || "",
+                    customer_phone: order?.phone || "",
+                    customer_address: order?.address || "",
+                    customer_email: order?.email || item.customer_email || ""
+                };
+            });
+
+            return res.json(result);
 
         } catch (error) {
-            console.error(error.message);
+            console.error(
+                "Server error loading return pickups:",
+                error.message
+            );
 
             return res.status(500).json({
                 message: "Server error loading return pickups"

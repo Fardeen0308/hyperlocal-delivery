@@ -229,6 +229,7 @@ function logout() {
 loadOrders();
 loadStats();
 loadDeliveryHistory();
+loadReturnPickups();
 
 setInterval(() => {
     const activeElement = document.activeElement;
@@ -243,6 +244,7 @@ setInterval(() => {
 
     loadStats();
     loadDeliveryHistory();
+    loadReturnPickups();
     sendLocation();
 }, 5000);
 
@@ -259,6 +261,211 @@ window.open(
 encodeURIComponent(address)
 );
 
+}
+
+// ===============================
+// DELIVERY PARTNER RETURN PICKUPS
+// ===============================
+
+// ===============================
+// DELIVERY PARTNER RETURN PICKUPS
+// ===============================
+
+async function loadReturnPickups() {
+
+    const container =
+        document.getElementById("returnPickups");
+
+    if (!container) return;
+
+    try {
+
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/delivery/my-return-pickups",
+            {
+                headers: {
+                    "Authorization": "Bearer " +
+                        localStorage.getItem("token")
+                },
+                cache: "no-store"
+            }
+        );
+
+        const requests = await response.json();
+
+        if (!response.ok) {
+            container.innerHTML =
+                "<p>Unable to load return pickups.</p>";
+            console.error(requests);
+            return;
+        }
+
+        if (!Array.isArray(requests) || requests.length === 0) {
+            container.innerHTML =
+                "<p>No return pickups assigned to you.</p>";
+            return;
+        }
+
+        container.innerHTML = "";
+
+        requests.forEach(request => {
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const details = document.createElement("div");
+
+            const fields = [
+                ["Return ID", request.id],
+                ["Order ID", request.order_id],
+                ["Product", request.product_name],
+                ["Quantity", request.quantity],
+                ["Customer", request.customer_name || request.customer_email],
+                ["Phone", request.customer_phone],
+                ["Pickup Address", request.customer_address],
+                ["Pickup status", request.status],
+                ["Pickup time", request.pickup_scheduled_at
+                    ? new Date(request.pickup_scheduled_at).toLocaleString()
+                    : "Not scheduled"],
+                ["Pickup note", request.pickup_note || "None"]
+            ];
+
+            fields.forEach(([label, value]) => {
+
+                const p = document.createElement("p");
+
+                const strong = document.createElement("strong");
+                strong.textContent = label + ": ";
+
+                p.append(
+                    strong,
+                    document.createTextNode(
+                        String(value ?? "Not available")
+                    )
+                );
+
+                details.appendChild(p);
+            });
+
+            card.appendChild(details);
+
+            // CALL CUSTOMER
+            if (request.customer_phone) {
+
+                const callButton = document.createElement("a");
+
+                callButton.href =
+                    "tel:" + request.customer_phone;
+
+                callButton.textContent = "📞 Call Customer";
+
+                callButton.className = "action-btn";
+
+                card.appendChild(callButton);
+            }
+
+            // GET DIRECTIONS
+            if (request.customer_address) {
+
+                const mapButton = document.createElement("a");
+
+                mapButton.href =
+                    "https://www.google.com/maps/search/?api=1&query=" +
+                    encodeURIComponent(request.customer_address);
+
+                mapButton.target = "_blank";
+                mapButton.rel = "noopener noreferrer";
+
+                mapButton.textContent = "📍 Get Directions";
+
+                mapButton.className = "action-btn";
+
+                card.appendChild(mapButton);
+            }
+
+            // PICKUP STATUS
+            if (request.status === "Pickup Scheduled") {
+
+                const button = document.createElement("button");
+
+                button.textContent = "✅ Mark as Picked Up";
+
+                button.onclick = () =>
+                    markReturnPickedUp(request.id, button);
+
+                card.appendChild(button);
+
+            } else {
+
+                const status = document.createElement("p");
+                status.textContent = "✅ Product picked up";
+                card.appendChild(status);
+
+            }
+
+            container.appendChild(card);
+
+        });
+
+    } catch (error) {
+
+        console.error("Return pickup error:", error);
+
+        container.innerHTML =
+            "<p>Unable to load return pickups.</p>";
+
+    }
+}
+
+
+async function markReturnPickedUp(id, button) {
+
+    if (!confirm("Have you collected this returned product?")) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Updating...";
+
+    try {
+
+        const response = await fetch(
+            "https://hyperlocal-backend-84rs.onrender.com/delivery/return-pickups/" +
+                id + "/picked-up",
+            {
+                method: "PUT",
+                headers: {
+                    "Authorization": "Bearer " +
+                        localStorage.getItem("token")
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Unable to update pickup.");
+            button.disabled = false;
+            button.textContent = "✅ Mark as Picked Up";
+            return;
+        }
+
+        alert(data.message || "Return product picked up successfully!");
+
+        await loadReturnPickups();
+
+        await loadStats();
+
+    } catch (error) {
+
+        console.error("Pickup update error:", error);
+
+        alert("Server error. Please try again.");
+
+        button.disabled = false;
+        button.textContent = "✅ Mark as Picked Up";
+
+    }
 }
 async function loadDeliveryHistory() {
     const history = document.getElementById("history");
